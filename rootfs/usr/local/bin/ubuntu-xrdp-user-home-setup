@@ -1,0 +1,45 @@
+#!/bin/bash
+set -Eeuo pipefail
+HOME_DIR="$HOME"
+DESKTOP="$HOME_DIR/Schreibtisch"
+mkdir -p "$DESKTOP" "$HOME_DIR/Downloads" "$HOME_DIR/Dokumente" "$HOME_DIR/Bilder" "$HOME_DIR/Musik" "$HOME_DIR/Videos" "$HOME_DIR/Vorlagen" "$HOME_DIR/Öffentlich" "$HOME_DIR/thinclient_drives" "$HOME_DIR/.config" "$HOME_DIR/.cache"
+chmod 755 "$DESKTOP" "$HOME_DIR/Downloads" "$HOME_DIR/Dokumente" "$HOME_DIR/Bilder" "$HOME_DIR/Musik" "$HOME_DIR/Videos" "$HOME_DIR/Vorlagen" "$HOME_DIR/Öffentlich"
+cat >"$HOME_DIR/.config/user-dirs.dirs" <<'EOF'
+XDG_DESKTOP_DIR="$HOME/Schreibtisch"
+XDG_DOWNLOAD_DIR="$HOME/Downloads"
+XDG_TEMPLATES_DIR="$HOME/Vorlagen"
+XDG_PUBLICSHARE_DIR="$HOME/Öffentlich"
+XDG_DOCUMENTS_DIR="$HOME/Dokumente"
+XDG_MUSIC_DIR="$HOME/Musik"
+XDG_PICTURES_DIR="$HOME/Bilder"
+XDG_VIDEOS_DIR="$HOME/Videos"
+EOF
+echo de_DE >"$HOME_DIR/.config/user-dirs.locale"
+rm -rf "$HOME_DIR/Desktop" 2>/dev/null || true
+ln -s Schreibtisch "$HOME_DIR/Desktop"
+cat >"$HOME_DIR/.config/mimeapps.list" <<'EOF'
+[Default Applications]
+application/pdf=ubuntu-xrdp-xournalpp.desktop
+application/x-pdf=ubuntu-xrdp-xournalpp.desktop
+image/jpeg=ubuntu-xrdp-gimp.desktop
+image/png=ubuntu-xrdp-gimp.desktop
+image/gif=ubuntu-xrdp-gimp.desktop
+image/webp=ubuntu-xrdp-gimp.desktop
+image/bmp=ubuntu-xrdp-gimp.desktop
+image/x-bmp=ubuntu-xrdp-gimp.desktop
+image/tiff=ubuntu-xrdp-gimp.desktop
+image/svg+xml=ubuntu-xrdp-gimp.desktop
+image/x-xcf=ubuntu-xrdp-gimp.desktop
+EOF
+copy_launcher(){ rm -f "$DESKTOP/$2"; install -m 755 "$1" "$DESKTOP/$2"; }
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-firefox.desktop Firefox.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-chrome.desktop Google-Chrome.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-writer.desktop LibreOffice-Writer.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-calc.desktop LibreOffice-Calc.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-impress.desktop LibreOffice-Impress.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-draw.desktop LibreOffice-Draw.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-evince.desktop PDF-Betrachter.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-pdfarranger.desktop PDF-Arranger.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-gimp.desktop GIMP.desktop
+copy_launcher /usr/local/share/applications/ubuntu-xrdp-xournalpp.desktop XournalPP.desktop
+rm -f "$DESKTOP/Terminal.desktop" "$DESKTOP/Dateimanager.desktop" "$DESKTOP/Thunar.desktop" "$DESKTOP/Synaptic.desktop" "$DESKTOP/GDebi.desktop" "$DESKTOP/Softwarequellen.desktop" "$DESKTOP/.clipboard" "$DESKTOP/.clipboard.desktop" 2>/dev/null || true
