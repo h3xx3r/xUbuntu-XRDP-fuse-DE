@@ -22,6 +22,8 @@ if [ -e "/usr/share/zoneinfo/${TZ}" ]; then
   echo "$TZ" >/etc/timezone
 fi
 
+/usr/local/sbin/install-desktop-apps
+
 mkdir -p /etc/ubuntu-xrdp/user-roles /run/dbus /run/xrdp/sockdir /run/ubuntu-xrdp
 chmod 1777 /run/xrdp/sockdir
 printf '%s\n' "$RESET_STANDARD_USERS" >/etc/ubuntu-xrdp/reset-standard-users
