@@ -10,6 +10,7 @@ Ubuntu 24.04 XFCE Remote-Desktop-Container für Unraid mit deutscher Desktop-Vor
 - XRDP 0.10.6.1 + xorgxrdp 0.10.5
 - Deutsche Oberfläche, Tastatur und Locale
 - Mehrere Benutzerkonten mit Admin- oder zurücksetzbarer Standardrolle
+- Optional passwortlose Gast-/Standardkonten, während Admin-Konten passwortgeschützt bleiben
 - Standardname für das erste Konto: `admin`
 - RDP-Client-Laufwerksumleitung über FUSE
 - RDP-Audio und Mikrofon über `pulseaudio-module-xrdp`
@@ -53,8 +54,9 @@ Danach in Unraid:
 2. Das Template **Ubuntu-XRDP** auswählen.
 3. `RDP_USERS`, `RDP_MASTER_PASSWORD`, Home-Pfad, Druckerzuordnungen und optionale GPU-Geräte konfigurieren.
 4. Das Standardpasswort `changeme` unbedingt ersetzen.
-5. Auf **Apply** klicken. Unraid lädt jetzt automatisch das Image und erstellt den Container.
-6. Container starten und per RDP verbinden.
+5. Optional **Gast ohne Passwort** konfigurieren.
+6. Auf **Apply** klicken. Unraid lädt jetzt automatisch das Image und erstellt den Container.
+7. Container starten und per RDP verbinden.
 
 Standardformat für Benutzer:
 
@@ -63,6 +65,40 @@ admin:1000:1000:1;guest:1001:1001:0
 ```
 
 Das letzte Feld ist `1` für einen Administrator und `0` für ein zurücksetzbares Standardkonto.
+
+### Gast-RDP ohne Passwort
+
+Die Unraid-Variable:
+
+```text
+RDP_PASSWORDLESS_STANDARD_USERS=1
+```
+
+bewirkt, dass **alle Konten mit `admin=0`** ein leeres Passwort erhalten. Admin-Konten mit `admin=1` verwenden weiterhin zwingend `RDP_MASTER_PASSWORD`.
+
+Mit der Standardkonfiguration:
+
+```text
+admin:1000:1000:1;guest:1001:1001:0
+```
+
+meldest du dich daher so an:
+
+```text
+Admin:
+Benutzer: admin
+Passwort: Wert aus RDP_MASTER_PASSWORD
+
+Gast:
+Benutzer: guest
+Passwort: leer lassen
+```
+
+Wenn Standard-/Gastkonten ebenfalls das Master-Passwort verwenden sollen:
+
+```text
+RDP_PASSWORDLESS_STANDARD_USERS=0
+```
 
 ### Updates unter Unraid
 
@@ -127,7 +163,7 @@ Weitere Informationen: [docs/PRINTING.md](docs/PRINTING.md)
 
 ### Sicherheitshinweis
 
-Alle Benutzer verwenden derzeit das konfigurierte `RDP_MASTER_PASSWORD`. XRDP sollte nicht direkt aus dem öffentlichen Internet erreichbar sein. LAN/VPN verwenden und das Standardpasswort ändern.
+Admin-Konten verwenden immer `RDP_MASTER_PASSWORD`. Wenn `RDP_PASSWORDLESS_STANDARD_USERS=1` gesetzt ist, können Konten mit `admin=0` ohne Passwort per RDP angemeldet werden. Diese Option sollte nur in einem vertrauenswürdigen LAN/VPN verwendet werden. XRDP nicht direkt aus dem öffentlichen Internet erreichbar machen.
 
 ### Lizenz
 
@@ -145,6 +181,7 @@ Ubuntu 24.04 XFCE Remote Desktop container for Unraid with German desktop defaul
 - XRDP 0.10.6.1 + xorgxrdp 0.10.5
 - German UI, keyboard and locale
 - Multiple user accounts with admin or resettable standard role
+- Optional passwordless guest/standard accounts while admin accounts remain password-protected
 - Default first account: `admin`
 - RDP client-drive redirection via FUSE
 - RDP audio and microphone via `pulseaudio-module-xrdp`
@@ -188,8 +225,9 @@ Then in Unraid:
 2. Select the **Ubuntu-XRDP** template.
 3. Configure `RDP_USERS`, `RDP_MASTER_PASSWORD`, the home path, printer mappings and optional GPU devices.
 4. Replace the default password `changeme`.
-5. Click **Apply**. Unraid now downloads the image and creates the container.
-6. Start the container and connect through RDP.
+5. Optionally configure **passwordless guest login**.
+6. Click **Apply**. Unraid now downloads the image and creates the container.
+7. Start the container and connect through RDP.
 
 Default user specification:
 
@@ -198,6 +236,40 @@ admin:1000:1000:1;guest:1001:1001:0
 ```
 
 The final field is `1` for an administrator and `0` for a resettable standard account.
+
+### Passwordless guest RDP login
+
+The Unraid variable:
+
+```text
+RDP_PASSWORDLESS_STANDARD_USERS=1
+```
+
+causes **all accounts with `admin=0`** to have an empty password. Admin accounts with `admin=1` still require `RDP_MASTER_PASSWORD`.
+
+With the default configuration:
+
+```text
+admin:1000:1000:1;guest:1001:1001:0
+```
+
+login is therefore:
+
+```text
+Admin:
+Username: admin
+Password: value of RDP_MASTER_PASSWORD
+
+Guest:
+Username: guest
+Password: leave empty
+```
+
+To require the master password for standard/guest accounts as well:
+
+```text
+RDP_PASSWORDLESS_STANDARD_USERS=0
+```
 
 ### Updates on Unraid
 
@@ -262,7 +334,7 @@ See [docs/PRINTING.md](docs/PRINTING.md).
 
 ### Security note
 
-All users currently share the configured `RDP_MASTER_PASSWORD`. Do not expose XRDP directly to the public Internet. Prefer LAN/VPN access and change the default password.
+Admin accounts always use `RDP_MASTER_PASSWORD`. When `RDP_PASSWORDLESS_STANDARD_USERS=1`, accounts with `admin=0` can log in over RDP with an empty password. Use this option only on a trusted LAN/VPN and do not expose XRDP directly to the public Internet.
 
 ### License
 
