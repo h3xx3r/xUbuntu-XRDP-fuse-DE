@@ -5,15 +5,16 @@
   <Network>bridge</Network>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Overview>Ubuntu 24.04 XFCE XRDP Multiuser Desktop mit deutscher Oberfläche, Gastreset, FUSE-Laufwerken, RDP Audio/Mikrofon, GPU und CUPS-Netzwerkdruckern.</Overview>
+  <Overview>Ubuntu 24.04 XFCE XRDP Multiuser Desktop mit deutscher Oberfläche, Gastreset, optional passwortlosen Gastkonten, FUSE-Laufwerken, RDP Audio/Mikrofon, GPU und CUPS-Netzwerkdruckern.</Overview>
   <Category>Tools:</Category>
   <ExtraParams>--shm-size=2g --cap-add=SYS_ADMIN --label net.unraid.docker.managed=dockerman --label net.unraid.docker.shell=bash</ExtraParams>
 
   <Config Name="RDP Port" Target="3389" Default="3389" Mode="tcp" Description="RDP Port" Type="Port" Display="always" Required="true" Mask="false">3389</Config>
   <Config Name="Home Verzeichnis" Target="/home" Default="/mnt/user/appdata/ubuntu-xrdp/home" Mode="rw" Description="Persistente Benutzerprofile und Drucker-Golden-Profile" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ubuntu-xrdp/home</Config>
   <Config Name="RDP Benutzer" Target="RDP_USERS" Default="admin:1000:1000:1;guest:1001:1001:0" Mode="" Description="Format: name:uid:gid:admin" Type="Variable" Display="always" Required="true" Mask="false">admin:1000:1000:1;guest:1001:1001:0</Config>
-  <Config Name="Master Passwort" Target="RDP_MASTER_PASSWORD" Default="changeme" Mode="" Description="Gemeinsames RDP Passwort - unbedingt ändern" Type="Variable" Display="always" Required="true" Mask="true">changeme</Config>
+  <Config Name="Master Passwort" Target="RDP_MASTER_PASSWORD" Default="changeme" Mode="" Description="Passwort für Admin-Konten und optional Standardkonten - unbedingt ändern" Type="Variable" Display="always" Required="true" Mask="true">changeme</Config>
   <Config Name="Standardkonten zurücksetzen" Target="RESET_STANDARD_USERS" Default="1" Mode="" Description="1 = Reset bei neuer Sitzung, 0 = persistent" Type="Variable" Display="always" Required="true" Mask="false">1</Config>
+  <Config Name="Gast ohne Passwort" Target="RDP_PASSWORDLESS_STANDARD_USERS" Default="1" Mode="" Description="1 = alle Konten mit admin=0 melden sich mit leerem Passwort an; Admin-Konten behalten das Master-Passwort. 0 = Standardkonten nutzen ebenfalls das Master-Passwort." Type="Variable" Display="always" Required="true" Mask="false">1</Config>
   <Config Name="RDP Audio" Target="RDP_AUDIO_ENABLED" Default="1" Mode="" Description="1 = Lautsprecher und Mikrofon über RDP" Type="Variable" Display="always" Required="true" Mask="false">1</Config>
   <Config Name="Netzwerkdrucker" Target="RDP_PRINTERS" Default="" Mode="" Description="user|queue|uri|model|options; mehrere Drucker mit ; trennen" Type="Variable" Display="always" Required="false" Mask="false"></Config>
   <Config Name="Druckerprofile neu erzeugen" Target="PRINTER_PROFILE_REFRESH" Default="0" Mode="" Description="1 erzeugt Golden Profiles neu; danach wieder auf 0" Type="Variable" Display="advanced" Required="true" Mask="false">0</Config>
