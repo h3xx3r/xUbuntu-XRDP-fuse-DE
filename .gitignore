@@ -1,0 +1,14 @@
+.env
+.env.*
+secrets/
+private/
+appdata/
+home/
+cups/
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.log
+.DS_Store
