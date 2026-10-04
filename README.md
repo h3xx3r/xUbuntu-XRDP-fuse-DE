@@ -2,25 +2,23 @@
 
 ## Deutsch
 
-Ubuntu 24.04 XFCE Remote-Desktop-Container für Unraid mit deutscher Desktop-Voreinstellung, Multiuser-XRDP-Sitzungen, FUSE-Laufwerksumleitung, RDP-Audio/Mikrofon, CUPS-Netzwerkdruckerprofilen, GPU-Passthrough und automatisch zurücksetzbaren Gastkonten.
+Ubuntu 24.04 XFCE Remote-Desktop-Container mit Multiuser-XRDP, FUSE-Laufwerksumleitung, RDP-Audio/Mikrofon, CUPS-Netzwerkdruckerprofilen, GPU-Unterstützung und automatisch zurücksetzbaren Gastkonten. Unterstützte Installationswege: **Unraid**, **Ubuntu Server 24.04** und **Proxmox VE über eine automatisch erzeugte Ubuntu-24.04-VM**.
 
 ### Highlights
 
 - Ubuntu 24.04 + XFCE
 - XRDP 0.10.6.1 + xorgxrdp 0.10.5
 - Deutsche Oberfläche, Tastatur und Locale
-- Mehrere Benutzerkonten mit Admin- oder zurücksetzbarer Standardrolle
-- Optional passwortlose Gast-/Standardkonten, während Admin-Konten passwortgeschützt bleiben
-- Standardname für das erste Konto: `admin`
+- Mehrere Benutzerkonten mit Admin- oder zurücksetzbarer Gast-/Standardrolle
+- Getrenntes Admin-Masterpasswort und Gastpasswort
+- Gastpasswort optional deaktivierbar, ohne den Admin-Zugang zu schwächen
 - RDP-Client-Laufwerksumleitung über FUSE
 - RDP-Audio und Mikrofon über `pulseaudio-module-xrdp`
 - Firefox, Google Chrome, LibreOffice, GIMP, Xournal++ und PDF Arranger
-- Xournal++ als PDF-Standard und GIMP als Bild-Standard
 - CUPS mit benutzerspezifischer Netzwerkdrucker-Zuweisung
 - Persistente Drucker-Golden-Profile pro Benutzer
-- Blauer XFCE-Hintergrund, eine untere Leiste und automatische Desktop-Symbolanordnung
-- GPU-/VAAPI-Passthrough über `/dev/dri`
-- Unraid-DockerMan-Template mit editierbaren Benutzern, Passwort, Druckern, Pfaden, Audio- und Sitzungseinstellungen
+- Blauer XFCE-Hintergrund, nur eine untere Leiste und automatische Desktop-Symbolanordnung
+- GPU-/VAAPI-Unterstützung über `/dev/dri`
 - GHCR-Images über GitHub Actions
 
 ### Docker-Image
@@ -31,6 +29,70 @@ ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:latest
 
 Später stehen zusätzlich `:stable` und versionierte Tags wie `:v1.0.0` zur Verfügung.
 
+### Benutzer und Passwörter
+
+Standardformat:
+
+```text
+admin:1000:1000:1;guest:1001:1001:0
+```
+
+Das letzte Feld bedeutet:
+
+```text
+1 = Administrator
+0 = Gast-/Standardkonto
+```
+
+Admin-Konten verwenden immer:
+
+```text
+RDP_MASTER_PASSWORD
+```
+
+Gast-/Standardkonten verwenden getrennt davon:
+
+```text
+RDP_GUEST_PASSWORD
+```
+
+Ob das Gastpasswort aktiv ist, steuert:
+
+```text
+RDP_GUEST_PASSWORD_ENABLED
+```
+
+Mit Gastpasswort:
+
+```text
+RDP_MASTER_PASSWORD=MeinAdminPasswort
+RDP_GUEST_PASSWORD=MeinGastPasswort
+RDP_GUEST_PASSWORD_ENABLED=1
+```
+
+Dann gilt:
+
+```text
+admin -> MeinAdminPasswort
+guest -> MeinGastPasswort
+```
+
+Ohne Gastpasswort:
+
+```text
+RDP_MASTER_PASSWORD=MeinAdminPasswort
+RDP_GUEST_PASSWORD_ENABLED=0
+```
+
+Dann gilt:
+
+```text
+admin -> MeinAdminPasswort
+guest -> Passwortfeld leer lassen
+```
+
+Das Admin-Masterpasswort darf nicht leer sein. Passwortlose Gastkonten nur in einem vertrauenswürdigen LAN oder über VPN verwenden.
+
 ### Installation unter Unraid
 
 Im Unraid-Terminal:
@@ -39,102 +101,118 @@ Im Unraid-Terminal:
 bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) latest
 ```
 
-Das Installationsskript:
+Das Script installiert nur das Template und lädt noch kein Docker-Image. Dadurch entsteht nach der Template-Installation kein verwaistes Image.
 
-1. lädt das aktuelle Unraid-Template aus diesem Repository,
-2. speichert es unter `/boot/config/plugins/dockerMan/templates-user/my-Ubuntu-XRDP.xml`,
-3. setzt den gewünschten Image-Kanal,
-4. lädt **noch kein Docker-Image**.
-
-Das Image wird absichtlich erst von Unraid geladen, wenn du den Container aus dem Template erstellst. Dadurch entsteht nach der Template-Installation kein **verwaistes Image**.
-
-Danach in Unraid:
+Danach:
 
 1. **Docker -> Add Container** öffnen.
-2. Das Template **Ubuntu-XRDP** auswählen.
-3. `RDP_USERS`, `RDP_MASTER_PASSWORD`, Home-Pfad, Druckerzuordnungen und optionale GPU-Geräte konfigurieren.
-4. Das Standardpasswort `changeme` unbedingt ersetzen.
-5. Optional **Gast ohne Passwort** konfigurieren.
-6. Auf **Apply** klicken. Unraid lädt jetzt automatisch das Image und erstellt den Container.
-7. Container starten und per RDP verbinden.
+2. Template **Ubuntu-XRDP** auswählen.
+3. `RDP_USERS`, **Admin Master-Passwort**, **Gast-Passwort verwenden**, **Gast-Passwort**, Home-Pfad, Drucker und optionale GPU-Devices konfigurieren.
+4. **Apply** klicken.
+5. Unraid lädt das Image und erstellt den Container.
 
-Standardformat für Benutzer:
+Updates:
 
 ```text
-admin:1000:1000:1;guest:1001:1001:0
+Docker -> Check for Updates
 ```
 
-Das letzte Feld ist `1` für einen Administrator und `0` für ein zurücksetzbares Standardkonto.
-
-### Gast-RDP ohne Passwort
-
-Die Unraid-Variable:
-
-```text
-RDP_PASSWORDLESS_STANDARD_USERS=1
-```
-
-bewirkt, dass **alle Konten mit `admin=0`** ein leeres Passwort erhalten. Admin-Konten mit `admin=1` verwenden weiterhin zwingend `RDP_MASTER_PASSWORD`.
-
-Mit der Standardkonfiguration:
-
-```text
-admin:1000:1000:1;guest:1001:1001:0
-```
-
-meldest du dich daher so an:
-
-```text
-Admin:
-Benutzer: admin
-Passwort: Wert aus RDP_MASTER_PASSWORD
-
-Gast:
-Benutzer: guest
-Passwort: leer lassen
-```
-
-Wenn Standard-/Gastkonten ebenfalls das Master-Passwort verwenden sollen:
-
-```text
-RDP_PASSWORDLESS_STANDARD_USERS=0
-```
-
-### Updates unter Unraid
-
-Docker-Image-Updates werden über GHCR bereitgestellt. In Unraid unter **Docker -> Check for Updates** prüfen und ein verfügbares Update installieren.
-
-Entwicklung:
-
-```text
-ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:latest
-```
-
-Stabil:
-
-```text
-ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:stable
-```
-
-Feste Version:
-
-```text
-ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:v1.0.0
-```
-
-Das Unraid-Template selbst kann ebenfalls erneut aus GitHub aktualisiert werden:
+Template erneut aktualisieren:
 
 ```bash
 bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) latest
 ```
 
-oder später für Stable:
+Persistente Daten bleiben unter:
 
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) stable
+```text
+/mnt/user/appdata/ubuntu-xrdp/home
 ```
 
-Persistente Daten unter `/mnt/user/appdata/ubuntu-xrdp/home` bleiben bei normalen Container-Updates erhalten. Dort liegen auch die persistenten Drucker-Golden-Profile.
+### Installation auf Ubuntu Server 24.04
+
+Als root oder mit `sudo`:
+
+```bash
+sudo bash -c 'bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-ubuntu-server.sh) latest'
+```
+
+Der Installer:
+
+- installiert Docker bei Bedarf,
+- verwendet das offizielle Docker-Repository,
+- erstellt `/etc/ubuntu-xrdp/ubuntu-xrdp.env`,
+- speichert Benutzerprofile persistent unter `/srv/ubuntu-xrdp/home`,
+- bindet `/dev/fuse` ein,
+- bindet vorhandene `/dev/dri`-Geräte automatisch ein,
+- startet den Container mit `--restart unless-stopped`.
+
+Konfiguration bearbeiten:
+
+```bash
+sudo nano /etc/ubuntu-xrdp/ubuntu-xrdp.env
+```
+
+Für ein späteres Update denselben Installationsbefehl erneut ausführen. Der Container wird ersetzt, Konfiguration und persistente Home-Daten bleiben erhalten.
+
+Stable:
+
+```bash
+sudo bash -c 'bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-ubuntu-server.sh) stable'
+```
+
+Feste Version:
+
+```bash
+sudo bash -c 'bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-ubuntu-server.sh) v1.0.0'
+```
+
+### Installation auf Proxmox VE
+
+Docker wird bewusst **nicht direkt auf dem Proxmox-Host** installiert. Das Script erstellt stattdessen eine Ubuntu-24.04-Cloud-Init-VM und installiert Ubuntu-XRDP automatisch innerhalb dieser VM.
+
+Auf dem Proxmox-Host als root:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-proxmox.sh) latest
+```
+
+Standardwerte:
+
+```text
+VMID: nächste freie ID
+Name: ubuntu-xrdp
+Storage: local-lvm
+Snippet-Storage: local
+Bridge: vmbr0
+CPU: 4 Cores
+RAM: 4096 MB
+Disk: 32 GB
+Netzwerk: DHCP
+RDP-Port: 3389
+```
+
+Beispiel mit eigenen Werten:
+
+```bash
+VMID=250 \
+VM_NAME=xrdp-server \
+CORES=6 \
+MEMORY=8192 \
+DISK_SIZE=64G \
+RDP_MASTER_PASSWORD='MeinAdminPasswort' \
+RDP_GUEST_PASSWORD='MeinGastPasswort' \
+RDP_GUEST_PASSWORD_ENABLED=1 \
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-proxmox.sh) latest
+```
+
+Wenn kein `RDP_MASTER_PASSWORD` angegeben wird, erzeugt das Proxmox-Script automatisch ein zufälliges Admin-Masterpasswort und zeigt es nach der VM-Erstellung an.
+
+Für `SNIPPET_STORAGE` muss in Proxmox der Inhaltstyp **Snippets** aktiviert sein. Standard ist `local`.
+
+Bei aktivierter Proxmox-Firewall muss TCP `3389` beziehungsweise der gewählte `RDP_PORT` zur VM freigegeben werden.
+
+GPU-Beschleunigung benötigt in Proxmox zusätzlich GPU-/PCI-Passthrough zur Ubuntu-VM. Sobald `/dev/dri` in der VM existiert, wird es vom Ubuntu-Installer automatisch an den Container weitergereicht.
 
 ### Druckerzuordnung
 
@@ -150,12 +228,10 @@ Beispiel:
 guest|Guest_HP|ipp://192.168.1.50/ipp/print|everywhere|media=A4,sides=one-sided
 ```
 
-Weitere Informationen: [docs/PRINTING.md](docs/PRINTING.md)
-
 ### Dokumentation
 
 - [Installation](docs/INSTALL.md)
-- [Benutzer und Gast-Reset](docs/USERS.md)
+- [Benutzer, Passwörter und Gast-Reset](docs/USERS.md)
 - [Audio](docs/AUDIO.md)
 - [Drucker](docs/PRINTING.md)
 - [Fehlerbehebung](docs/TROUBLESHOOTING.md)
@@ -163,7 +239,7 @@ Weitere Informationen: [docs/PRINTING.md](docs/PRINTING.md)
 
 ### Sicherheitshinweis
 
-Admin-Konten verwenden immer `RDP_MASTER_PASSWORD`. Wenn `RDP_PASSWORDLESS_STANDARD_USERS=1` gesetzt ist, können Konten mit `admin=0` ohne Passwort per RDP angemeldet werden. Diese Option sollte nur in einem vertrauenswürdigen LAN/VPN verwendet werden. XRDP nicht direkt aus dem öffentlichen Internet erreichbar machen.
+XRDP nicht direkt aus dem öffentlichen Internet erreichbar machen. Für externen Zugriff LAN/VPN bevorzugen. `RDP_MASTER_PASSWORD` immer ändern. Passwortlose Gastkonten nur verwenden, wenn das Netz vertrauenswürdig ist.
 
 ### Lizenz
 
@@ -173,26 +249,24 @@ Die projektspezifischen Skripte und Konfigurationsdateien stehen unter der MIT-L
 
 ## English
 
-Ubuntu 24.04 XFCE Remote Desktop container for Unraid with German desktop defaults, multi-user XRDP sessions, FUSE client-drive redirection, RDP audio/microphone, CUPS network-printer profiles, GPU passthrough and resettable guest accounts.
+Ubuntu 24.04 XFCE Remote Desktop container with multi-user XRDP, FUSE client-drive redirection, RDP audio/microphone, CUPS network-printer profiles, GPU support and resettable guest accounts. Supported installation targets: **Unraid**, **Ubuntu Server 24.04**, and **Proxmox VE through an automatically created Ubuntu 24.04 VM**.
 
 ### Highlights
 
 - Ubuntu 24.04 + XFCE
 - XRDP 0.10.6.1 + xorgxrdp 0.10.5
 - German UI, keyboard and locale
-- Multiple user accounts with admin or resettable standard role
-- Optional passwordless guest/standard accounts while admin accounts remain password-protected
-- Default first account: `admin`
-- RDP client-drive redirection via FUSE
-- RDP audio and microphone via `pulseaudio-module-xrdp`
+- Admin and resettable guest/standard accounts
+- Separate administrator master password and guest password
+- Optional passwordless guest login while administrator accounts remain protected
+- FUSE RDP client-drive redirection
+- RDP audio and microphone
 - Firefox, Google Chrome, LibreOffice, GIMP, Xournal++ and PDF Arranger
-- Xournal++ as PDF default and GIMP as image default
-- CUPS with per-user network-printer assignment
+- CUPS per-user printer assignment
 - Persistent per-user printer golden profiles
-- Blue XFCE background, one bottom panel and automatic desktop-icon arrangement
-- GPU/VAAPI passthrough with `/dev/dri`
-- Unraid DockerMan template with editable users, password, printers, paths, audio and session settings
-- GHCR images built by GitHub Actions
+- Blue XFCE desktop, one bottom panel and automatic desktop icon arrangement
+- GPU/VAAPI support through `/dev/dri`
+- GHCR images built through GitHub Actions
 
 ### Docker image
 
@@ -200,9 +274,41 @@ Ubuntu 24.04 XFCE Remote Desktop container for Unraid with German desktop defaul
 ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:latest
 ```
 
-Later releases will also provide `:stable` and versioned tags such as `:v1.0.0`.
+### Users and passwords
 
-### Installation on Unraid
+Example:
+
+```text
+admin:1000:1000:1;guest:1001:1001:0
+```
+
+Administrator accounts (`admin=1`) always use:
+
+```text
+RDP_MASTER_PASSWORD
+```
+
+Guest/standard accounts (`admin=0`) use:
+
+```text
+RDP_GUEST_PASSWORD
+```
+
+when:
+
+```text
+RDP_GUEST_PASSWORD_ENABLED=1
+```
+
+Set:
+
+```text
+RDP_GUEST_PASSWORD_ENABLED=0
+```
+
+to allow guest accounts to log in with an empty password while administrators still require the master password.
+
+### Unraid installation
 
 Run in the Unraid terminal:
 
@@ -210,123 +316,58 @@ Run in the Unraid terminal:
 bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) latest
 ```
 
-The installer:
+Then open **Docker -> Add Container**, select **Ubuntu-XRDP**, configure users/passwords and click **Apply**.
 
-1. downloads the current Unraid template from this repository,
-2. stores it at `/boot/config/plugins/dockerMan/templates-user/my-Ubuntu-XRDP.xml`,
-3. selects the requested image channel,
-4. deliberately **does not pull the Docker image yet**.
-
-The image is downloaded by Unraid only when you create the container from the template. This avoids an **orphaned image** immediately after installing the template.
-
-Then in Unraid:
-
-1. Open **Docker -> Add Container**.
-2. Select the **Ubuntu-XRDP** template.
-3. Configure `RDP_USERS`, `RDP_MASTER_PASSWORD`, the home path, printer mappings and optional GPU devices.
-4. Replace the default password `changeme`.
-5. Optionally configure **passwordless guest login**.
-6. Click **Apply**. Unraid now downloads the image and creates the container.
-7. Start the container and connect through RDP.
-
-Default user specification:
-
-```text
-admin:1000:1000:1;guest:1001:1001:0
-```
-
-The final field is `1` for an administrator and `0` for a resettable standard account.
-
-### Passwordless guest RDP login
-
-The Unraid variable:
-
-```text
-RDP_PASSWORDLESS_STANDARD_USERS=1
-```
-
-causes **all accounts with `admin=0`** to have an empty password. Admin accounts with `admin=1` still require `RDP_MASTER_PASSWORD`.
-
-With the default configuration:
-
-```text
-admin:1000:1000:1;guest:1001:1001:0
-```
-
-login is therefore:
-
-```text
-Admin:
-Username: admin
-Password: value of RDP_MASTER_PASSWORD
-
-Guest:
-Username: guest
-Password: leave empty
-```
-
-To require the master password for standard/guest accounts as well:
-
-```text
-RDP_PASSWORDLESS_STANDARD_USERS=0
-```
-
-### Updates on Unraid
-
-Docker image updates are distributed through GHCR. Use **Docker -> Check for Updates** in Unraid and install the update when one is available.
-
-Development:
-
-```text
-ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:latest
-```
-
-Stable:
-
-```text
-ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:stable
-```
-
-Pinned version:
-
-```text
-ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:v1.0.0
-```
-
-The Unraid template itself can be refreshed from GitHub at any time:
+### Ubuntu Server 24.04 installation
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) latest
+sudo bash -c 'bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-ubuntu-server.sh) latest'
 ```
 
-or later for stable:
-
-```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) stable
-```
-
-Persistent data under `/mnt/user/appdata/ubuntu-xrdp/home` is preserved during normal container updates. This also contains the persistent printer golden profiles.
-
-### Printer mapping
-
-`RDP_PRINTERS` uses:
+Configuration is stored in:
 
 ```text
-user|queue|uri|model|options
+/etc/ubuntu-xrdp/ubuntu-xrdp.env
+```
+
+Persistent user data is stored in:
+
+```text
+/srv/ubuntu-xrdp/home
+```
+
+Run the same installer again later to update/recreate the container while preserving configuration and persistent user data.
+
+### Proxmox VE installation
+
+Docker is deliberately not installed directly on the Proxmox VE host. The installer creates an Ubuntu 24.04 cloud-init VM and automatically runs the Ubuntu Server installer inside it.
+
+Run as root on the Proxmox host:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-proxmox.sh) latest
 ```
 
 Example:
 
-```text
-guest|Guest_HP|ipp://192.168.1.50/ipp/print|everywhere|media=A4,sides=one-sided
+```bash
+VMID=250 \
+VM_NAME=xrdp-server \
+CORES=6 \
+MEMORY=8192 \
+DISK_SIZE=64G \
+RDP_MASTER_PASSWORD='MyAdminPassword' \
+RDP_GUEST_PASSWORD='MyGuestPassword' \
+RDP_GUEST_PASSWORD_ENABLED=1 \
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-proxmox.sh) latest
 ```
 
-See [docs/PRINTING.md](docs/PRINTING.md).
+The selected `SNIPPET_STORAGE` must support Proxmox **Snippets**. If no administrator master password is supplied, the installer generates one and prints it after creating the VM.
 
 ### Documentation
 
 - [Installation](docs/INSTALL.md)
-- [Users and guest reset](docs/USERS.md)
+- [Users, passwords and guest reset](docs/USERS.md)
 - [Audio](docs/AUDIO.md)
 - [Printing](docs/PRINTING.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
@@ -334,7 +375,7 @@ See [docs/PRINTING.md](docs/PRINTING.md).
 
 ### Security note
 
-Admin accounts always use `RDP_MASTER_PASSWORD`. When `RDP_PASSWORDLESS_STANDARD_USERS=1`, accounts with `admin=0` can log in over RDP with an empty password. Use this option only on a trusted LAN/VPN and do not expose XRDP directly to the public Internet.
+Do not expose XRDP directly to the public Internet. Prefer LAN/VPN access. Always change `RDP_MASTER_PASSWORD`. Use passwordless guest accounts only on a trusted network.
 
 ### License
 
