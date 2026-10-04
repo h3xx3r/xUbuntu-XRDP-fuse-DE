@@ -1,0 +1,13 @@
+#!/bin/bash
+set -Eeuo pipefail
+[ "$#" -eq 1 ] || { echo "Usage: save-printer-profile USER"; exit 1; }
+USER_NAME="$1"
+id "$USER_NAME" >/dev/null 2>&1 || { echo "Unknown user: $USER_NAME"; exit 1; }
+HOME_DIR="$(getent passwd "$USER_NAME" | cut -d: -f6)"
+SOURCE="$HOME_DIR/.cups/lpoptions"
+TARGET_DIR="/home/.ubuntu-xrdp-printer-profiles/${USER_NAME}"
+TARGET="$TARGET_DIR/lpoptions.bak"
+[ -f "$SOURCE" ] || { echo "No current lpoptions for $USER_NAME"; exit 1; }
+mkdir -p "$TARGET_DIR"
+install -o root -g root -m 644 "$SOURCE" "$TARGET"
+echo "Saved: $TARGET"
