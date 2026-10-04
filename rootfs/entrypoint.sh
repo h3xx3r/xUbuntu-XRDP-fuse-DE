@@ -4,6 +4,7 @@ set -Eeuo pipefail
 RDP_USERS="${RDP_USERS:-admin:1000:1000:1}"
 RDP_MASTER_PASSWORD="${RDP_MASTER_PASSWORD:-changeme}"
 RESET_STANDARD_USERS="${RESET_STANDARD_USERS:-1}"
+RDP_PASSWORDLESS_STANDARD_USERS="${RDP_PASSWORDLESS_STANDARD_USERS:-1}"
 RDP_AUDIO_ENABLED="${RDP_AUDIO_ENABLED:-1}"
 RDP_PRINTERS="${RDP_PRINTERS:-}"
 PRINTER_PROFILE_REFRESH="${PRINTER_PROFILE_REFRESH:-0}"
@@ -14,7 +15,8 @@ IDLE_TIME_LIMIT="${IDLE_TIME_LIMIT:-0}"
 SESSION_POLICY="${SESSION_POLICY:-Default}"
 TZ="${TZ:-Europe/Berlin}"
 
-export RDP_USERS RDP_MASTER_PASSWORD RESET_STANDARD_USERS RDP_AUDIO_ENABLED RDP_PRINTERS PRINTER_PROFILE_REFRESH
+export RDP_USERS RDP_MASTER_PASSWORD RESET_STANDARD_USERS RDP_PASSWORDLESS_STANDARD_USERS
+export RDP_AUDIO_ENABLED RDP_PRINTERS PRINTER_PROFILE_REFRESH
 export MAX_SESSIONS KILL_DISCONNECTED DISCONNECTED_TIME_LIMIT IDLE_TIME_LIMIT SESSION_POLICY TZ
 
 if [ -e "/usr/share/zoneinfo/${TZ}" ]; then
@@ -28,6 +30,7 @@ mkdir -p /etc/ubuntu-xrdp/user-roles /run/dbus /run/xrdp/sockdir /run/ubuntu-xrd
 chmod 1777 /run/xrdp/sockdir
 printf '%s\n' "$RESET_STANDARD_USERS" >/etc/ubuntu-xrdp/reset-standard-users
 printf '%s\n' "$RDP_AUDIO_ENABLED" >/etc/ubuntu-xrdp/rdp-audio-enabled
+printf '%s\n' "$RDP_PASSWORDLESS_STANDARD_USERS" >/etc/ubuntu-xrdp/passwordless-standard-users
 
 sed -i "s/^MaxSessions=.*/MaxSessions=${MAX_SESSIONS}/" /etc/xrdp/sesman.ini
 sed -i "s/^KillDisconnected=.*/KillDisconnected=${KILL_DISCONNECTED}/" /etc/xrdp/sesman.ini
@@ -52,12 +55,20 @@ for SPEC in "${USERS[@]}"; do
     fi
   fi
 
-  printf '%s:%s\n' "$NAME" "$RDP_MASTER_PASSWORD" | chpasswd
-
   if [ "$ADMIN" = "1" ]; then
+    if [ -z "$RDP_MASTER_PASSWORD" ]; then
+      echo "Fehler: RDP_MASTER_PASSWORD darf für Admin-Konten nicht leer sein." >&2
+      exit 1
+    fi
+    printf '%s:%s\n' "$NAME" "$RDP_MASTER_PASSWORD" | chpasswd
     usermod -aG sudo,lpadmin "$NAME"
     echo admin >"/etc/ubuntu-xrdp/user-roles/${NAME}"
   else
+    if [ "$RDP_PASSWORDLESS_STANDARD_USERS" = "1" ]; then
+      passwd -d "$NAME" >/dev/null
+    else
+      printf '%s:%s\n' "$NAME" "$RDP_MASTER_PASSWORD" | chpasswd
+    fi
     gpasswd -d "$NAME" sudo >/dev/null 2>&1 || true
     gpasswd -d "$NAME" lpadmin >/dev/null 2>&1 || true
     echo standard >"/etc/ubuntu-xrdp/user-roles/${NAME}"
