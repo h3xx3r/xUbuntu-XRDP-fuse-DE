@@ -73,6 +73,17 @@ RUN wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd6
  && rm -f /tmp/chrome.deb \
  && rm -rf /var/lib/apt/lists/*
 
+# Official OpenAI ChatGPT desktop app for Ubuntu 24.04 (Linux preview, x64).
+# The official package configures OpenAI's signed package repository for future app updates.
+RUN curl --proto '=https' --tlsv1.2 -fL \
+      https://persistent.oaistatic.com/codex-app-prod/linux/deb/latest/chatgpt_amd64.deb \
+      -o /tmp/chatgpt_amd64.deb \
+ && apt-get update \
+ && apt-get install -y /tmp/chatgpt_amd64.deb \
+ && rm -f /tmp/chatgpt_amd64.deb \
+ && command -v chatgpt >/dev/null \
+ && rm -rf /var/lib/apt/lists/*
+
 # Xournal++ 1.3.8 and Jammy qpdf ABI dependency.
 RUN curl -fL https://archive.ubuntu.com/ubuntu/pool/main/q/qpdf/libqpdf28_10.6.3-1ubuntu0.1_amd64.deb -o /tmp/libqpdf28.deb \
  && apt-get update \
