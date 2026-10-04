@@ -1,0 +1,6 @@
+#!/bin/bash
+for n in $(seq 1 60); do
+  [ -e /run/ubuntu-xrdp/printers.ready ] && break
+  sleep 1
+done
+exec /usr/sbin/xrdp-sesman --nodaemon
