@@ -1,0 +1,49 @@
+#!/bin/bash
+SOURCE="$HOME/thinclient_drives"
+DESKTOP="$HOME/Schreibtisch"
+LAST_STATE=""
+mkdir -p "$SOURCE" "$DESKTOP"
+
+sanitize(){ printf '%s' "$1" | sed -e 's#[/\\:]#_#g' -e 's#[^[:alnum:]ÄÖÜäöüß_. -]#_#g'; }
+trust(){ local file="$1" sum; chmod 755 "$file"; sum="$(sha256sum "$file" | awk '{print $1}')"; gio set -t string "$file" metadata::xfce-exe-checksum "$sum" >/dev/null 2>&1 || true; }
+
+while true; do
+  if [ -d "$SOURCE" ]; then
+    while IFS= read -r -d '' DRIVE; do
+      NAME="$(basename "$DRIVE")"
+      case "$NAME" in .*|"") continue ;; esac
+      SAFE="$(sanitize "$NAME")"
+      FILE="$DESKTOP/RDP-Laufwerk-${SAFE}.desktop"
+      if [ ! -f "$FILE" ]; then
+        cat >"$FILE" <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Laufwerk ${NAME}
+Exec=thunar "${DRIVE}"
+Icon=drive-removable-media-usb
+Terminal=false
+StartupNotify=true
+X-XRDP-Drive=true
+X-XRDP-Source=${DRIVE}
+EOF
+      fi
+      trust "$FILE"
+    done < <(find "$SOURCE" -mindepth 1 -maxdepth 1 ! -name '.*' -print0 2>/dev/null)
+  fi
+
+  for FILE in "$DESKTOP"/RDP-Laufwerk-*.desktop; do
+    [ -e "$FILE" ] || continue
+    DRIVE="$(sed -n 's/^X-XRDP-Source=//p' "$FILE" | head -1)"
+    if [ -z "$DRIVE" ] || { [ ! -e "$DRIVE" ] && [ ! -L "$DRIVE" ]; }; then rm -f "$FILE"; fi
+  done
+
+  rm -f "$DESKTOP/.clipboard" "$DESKTOP/.clipboard.desktop" 2>/dev/null || true
+  STATE="$(find "$DESKTOP" -maxdepth 1 -printf '%f\n' 2>/dev/null | sort | sha256sum | awk '{print $1}')"
+  if [ "$STATE" != "$LAST_STATE" ]; then
+    xfdesktop --arrange >/dev/null 2>&1 || true
+    xfdesktop --reload >/dev/null 2>&1 || true
+    LAST_STATE="$STATE"
+  fi
+  sleep 1
+done
