@@ -15,19 +15,39 @@ setxkbmap de >/dev/null 2>&1 || true
 set_xfce xfce4-desktop /desktop-icons/style int 2
 set_xfce xfce4-desktop /desktop-icons/icon-size uint 64
 set_xfce xfce4-desktop /desktop-icons/file-icons/show-filesystem bool false
-set_xfce xfce4-panel /panels/panel-1/position string 'p=10;x=0;y=0'
-set_xfce xfce4-panel /panels/panel-1/length uint 100
-set_xfce xfce4-panel /panels/panel-1/position-locked bool true
-set_xfce xfce4-panel /panels/panel-1/size uint 36
 set_xfce xfwm4 /general/use_compositing bool false
 
-# Remove extra panels and keep panel 1 only.
+# Keep ONLY XFCE panel 1. Xubuntu may recreate its second bottom dock on a
+# fresh profile, so remove every panel except panel 1 and rebuild the panel
+# array before configuring panel 1.
 for id in $(xfconf-query -c xfce4-panel -p /panels 2>/dev/null | grep -E '^[[:space:]]*[0-9]+[[:space:]]*$' | tr -d ' ' || true); do
-  [ "$id" = 1 ] && continue
+  [ "$id" = "1" ] && continue
   xfconf-query -c xfce4-panel -p "/panels/panel-${id}" -r -R >/dev/null 2>&1 || true
 done
+
+# Also remove stale panel-N trees which may exist even when /panels does not
+# currently list them.
+for panel_path in $(xfconf-query -c xfce4-panel -l 2>/dev/null | sed -n 's#^/panels/panel-\([0-9][0-9]*\)/.*#\1#p' | sort -u); do
+  [ "$panel_path" = "1" ] && continue
+  xfconf-query -c xfce4-panel -p "/panels/panel-${panel_path}" -r -R >/dev/null 2>&1 || true
+done
+
 xfconf-query -c xfce4-panel -p /panels -r >/dev/null 2>&1 || true
 xfconf-query -c xfce4-panel -p /panels --force-array -n -t int -s 1 >/dev/null 2>&1 || true
+
+# Configure the single remaining panel.
+set_xfce xfce4-panel /panels/panel-1/position string 'p=10;x=0;y=0'
+set_xfce xfce4-panel /panels/panel-1/length uint 100
+set_xfce xfce4-panel /panels/panel-1/length-adjust bool false
+set_xfce xfce4-panel /panels/panel-1/position-locked bool true
+set_xfce xfce4-panel /panels/panel-1/size uint 36
+
+# Important: the running panel process can keep the deleted second panel in
+# memory. Restart it after rewriting the panel configuration.
+xfce4-panel --quit >/dev/null 2>&1 || true
+sleep 1
+xfce4-panel --disable-wm-check >/tmp/panel-${USER}.log 2>&1 &
+sleep 2
 
 # Solid blue background (#3584E4).
 for base in /backdrop/screen0/monitorrdp0/workspace0 /backdrop/screen0/monitor0/workspace0; do
