@@ -44,16 +44,28 @@ copy_launcher /usr/local/share/applications/ubuntu-xrdp-pdfarranger.desktop PDF-
 copy_launcher /usr/local/share/applications/ubuntu-xrdp-gimp.desktop GIMP.desktop
 copy_launcher /usr/local/share/applications/ubuntu-xrdp-xournalpp.desktop XournalPP.desktop
 
+# Hide desktop entries shipped by the ChatGPT package. Admin users get our XRDP-safe launcher below.
+while IFS= read -r app; do
+  [ -n "$app" ] || continue
+  base="$(basename "$app")"
+  cat >"$LOCAL_APPS/$base" <<'EOF'
+[Desktop Entry]
+Type=Application
+Hidden=true
+NoDisplay=true
+EOF
+done < <(find /usr/share/applications /usr/local/share/applications -maxdepth 1 -type f -iname '*chatgpt*.desktop' 2>/dev/null | sort -u)
+
 ROLE="standard"
 ROLE_FILE="/etc/ubuntu-xrdp/user-roles/${USER}"
 [ -r "$ROLE_FILE" ] && ROLE="$(cat "$ROLE_FILE")"
 
 if [ "$ROLE" = "admin" ]; then
   copy_launcher /usr/local/share/ubuntu-xrdp/admin-applications/chatgpt.desktop ChatGPT.desktop
-  install -m 755 /usr/local/share/ubuntu-xrdp/admin-applications/chatgpt.desktop "$LOCAL_APPS/chatgpt.desktop"
+  install -m 755 /usr/local/share/ubuntu-xrdp/admin-applications/chatgpt.desktop "$LOCAL_APPS/ubuntu-xrdp-chatgpt.desktop"
   install -m 755 /usr/local/share/ubuntu-xrdp/admin-applications/synaptic.desktop "$LOCAL_APPS/synaptic.desktop"
 else
-  rm -f "$DESKTOP/ChatGPT.desktop" "$LOCAL_APPS/chatgpt.desktop" 2>/dev/null || true
+  rm -f "$DESKTOP/ChatGPT.desktop" "$LOCAL_APPS/ubuntu-xrdp-chatgpt.desktop" 2>/dev/null || true
   cat >"$LOCAL_APPS/synaptic.desktop" <<'EOF'
 [Desktop Entry]
 Type=Application
