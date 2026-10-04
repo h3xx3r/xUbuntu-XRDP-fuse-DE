@@ -1,14 +1,50 @@
 #!/bin/bash
 set -Eeuo pipefail
 
-TEMPLATE_URL="https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/unraid/my-Ubuntu-XRDP.xml"
+CHANNEL="${1:-latest}"
+REPO="h3xx3r/xUbuntu-XRDP-fuse-DE"
+IMAGE="ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:${CHANNEL}"
+TEMPLATE_URL="https://raw.githubusercontent.com/${REPO}/main/unraid/my-Ubuntu-XRDP.xml"
 TEMPLATE_DIR="/boot/config/plugins/dockerMan/templates-user"
-IMAGE="ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:stable"
+TEMPLATE_FILE="${TEMPLATE_DIR}/my-Ubuntu-XRDP.xml"
+TMP="${TEMPLATE_FILE}.tmp"
 
-[ -d /boot/config/plugins/dockerMan ] || { echo "This installer is intended for Unraid."; exit 1; }
+case "$CHANNEL" in
+  latest|stable|v*) ;;
+  *)
+    echo "Ungültiger Kanal: $CHANNEL"
+    echo "Erlaubt: latest, stable oder ein Versions-Tag wie v1.0.0"
+    exit 1
+    ;;
+esac
+
+if [ ! -d /boot/config/plugins/dockerMan ]; then
+  echo "Dieses Script ist für Unraid vorgesehen."
+  exit 1
+fi
+
 mkdir -p "$TEMPLATE_DIR"
-curl -fL "$TEMPLATE_URL" -o "$TEMPLATE_DIR/my-Ubuntu-XRDP.xml"
-docker pull "$IMAGE"
+
+curl -fsSL "$TEMPLATE_URL" -o "$TMP"
+sed -i "s#ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:[^<]*#${IMAGE}#" "$TMP"
+mv "$TMP" "$TEMPLATE_FILE"
+
+printf '\nTemplate installiert/aktualisiert:\n  %s\n\n' "$TEMPLATE_FILE"
+printf 'Image-Kanal:\n  %s\n\n' "$IMAGE"
+
+echo "Versuche Image zu laden ..."
+if docker pull "$IMAGE"; then
+  echo
+  echo "Image erfolgreich geladen."
+else
+  echo
+  echo "Hinweis: Das Image ist noch nicht verfügbar oder das GHCR-Paket ist noch nicht öffentlich."
+  echo "Das Template wurde trotzdem installiert."
+fi
+
 echo
-echo "Installed Unraid template and pulled $IMAGE"
-echo "Open Unraid -> Docker -> Add Container and select Ubuntu-XRDP."
+echo "Weiter in Unraid:"
+echo "  Docker -> Add Container -> Template -> Ubuntu-XRDP"
+echo
+echo "Für spätere Template-Updates denselben Befehl erneut ausführen."
+echo "Docker-Image-Updates erkennt Unraid über den Repository-Tag automatisch."
