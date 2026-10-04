@@ -1,0 +1,71 @@
+#!/bin/bash
+set -u
+READY=/run/ubuntu-xrdp/printers.ready
+PROFILE_ROOT=/home/.ubuntu-xrdp-printer-profiles
+RDP_PRINTERS="${RDP_PRINTERS:-}"
+REFRESH="${PRINTER_PROFILE_REFRESH:-0}"
+mkdir -p /run/ubuntu-xrdp "$PROFILE_ROOT"
+trap 'touch /run/ubuntu-xrdp/printers.ready' EXIT
+
+for n in $(seq 1 30); do lpstat -r >/dev/null 2>&1 && break; sleep 1; done
+
+ADMIN_USERS=""
+for role in /etc/ubuntu-xrdp/user-roles/*; do
+  [ -f "$role" ] || continue
+  [ "$(cat "$role")" = admin ] || continue
+  user="$(basename "$role")"
+  ADMIN_USERS="${ADMIN_USERS:+${ADMIN_USERS},}${user}"
+done
+
+mkdir -p /etc/cups
+OLD=/etc/cups/ubuntu-xrdp-managed-printers
+NEW=/tmp/ubuntu-xrdp-managed-printers.new
+: >"$NEW"
+IFS=';' read -ra LIST <<<"$RDP_PRINTERS"
+
+for SPEC in "${LIST[@]}"; do
+  [ -n "$SPEC" ] || continue
+  IFS='|' read -r PR_USER PR_QUEUE PR_URI PR_MODEL PR_OPTIONS <<<"$SPEC"
+  PR_MODEL="${PR_MODEL:-everywhere}"
+  id "$PR_USER" >/dev/null 2>&1 || continue
+  [[ "$PR_QUEUE" =~ ^[A-Za-z0-9_.-]+$ ]] || continue
+  [ -n "$PR_URI" ] || continue
+
+  lpadmin -p "$PR_QUEUE" -E -v "$PR_URI" -m "$PR_MODEL" -o printer-is-shared=false || continue
+  cupsenable "$PR_QUEUE" >/dev/null 2>&1 || true
+  cupsaccept "$PR_QUEUE" >/dev/null 2>&1 || true
+
+  ALLOW="$PR_USER"
+  IFS=',' read -ra ADMINS <<<"$ADMIN_USERS"
+  for ADMIN in "${ADMINS[@]}"; do [ -n "$ADMIN" ] && [ "$ADMIN" != "$PR_USER" ] && ALLOW="${ALLOW},${ADMIN}"; done
+  lpadmin -p "$PR_QUEUE" -u "allow:${ALLOW}" >/dev/null 2>&1 || true
+  echo "$PR_QUEUE" >>"$NEW"
+
+  PROFILE_DIR="${PROFILE_ROOT}/${PR_USER}"
+  PROFILE_FILE="${PROFILE_DIR}/lpoptions.bak"
+  mkdir -p "$PROFILE_DIR"
+  CREATE=0
+  [ -f "$PROFILE_FILE" ] || CREATE=1
+  [ "$REFRESH" = 1 ] && CREATE=1
+
+  if [ "$CREATE" = 1 ]; then
+    TMP_HOME="$(mktemp -d "/tmp/printer-profile-${PR_USER}.XXXXXX")"
+    chown -R "$(id -u "$PR_USER"):$(id -g "$PR_USER")" "$TMP_HOME"
+    runuser -u "$PR_USER" -- env HOME="$TMP_HOME" USER="$PR_USER" lpoptions -d "$PR_QUEUE"
+    if [ -n "$PR_OPTIONS" ]; then
+      IFS=',' read -ra OPTS <<<"$PR_OPTIONS"
+      for OPT in "${OPTS[@]}"; do [ -n "$OPT" ] && runuser -u "$PR_USER" -- env HOME="$TMP_HOME" USER="$PR_USER" lpoptions -p "$PR_QUEUE" -o "$OPT"; done
+    fi
+    [ -f "$TMP_HOME/.cups/lpoptions" ] && install -o root -g root -m 644 "$TMP_HOME/.cups/lpoptions" "$PROFILE_FILE"
+    rm -rf "$TMP_HOME"
+  fi
+
+  USER_HOME="$(getent passwd "$PR_USER" | cut -d: -f6)"
+  runuser -u "$PR_USER" -- env HOME="$USER_HOME" USER="$PR_USER" /usr/local/bin/restore-printer-profile >/dev/null 2>&1 || true
+done
+
+if [ -f "$OLD" ]; then
+  while IFS= read -r Q; do [ -n "$Q" ] && ! grep -Fxq "$Q" "$NEW" && lpadmin -x "$Q" >/dev/null 2>&1 || true; done <"$OLD"
+fi
+sort -u "$NEW" >"$OLD"
+rm -f "$NEW"
