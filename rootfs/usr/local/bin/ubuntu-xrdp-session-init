@@ -1,0 +1,54 @@
+#!/bin/bash
+set -u
+DESKTOP="$HOME/Schreibtisch"
+
+set_xfce(){
+  channel="$1"; prop="$2"; type="$3"; value="$4"
+  if xfconf-query -c "$channel" -p "$prop" >/dev/null 2>&1; then
+    xfconf-query -c "$channel" -p "$prop" -s "$value" >/dev/null 2>&1 || true
+  else
+    xfconf-query -c "$channel" -p "$prop" -n -t "$type" -s "$value" >/dev/null 2>&1 || true
+  fi
+}
+
+setxkbmap de >/dev/null 2>&1 || true
+set_xfce xfce4-desktop /desktop-icons/style int 2
+set_xfce xfce4-desktop /desktop-icons/icon-size uint 64
+set_xfce xfce4-desktop /desktop-icons/file-icons/show-filesystem bool false
+set_xfce xfce4-panel /panels/panel-1/position string 'p=10;x=0;y=0'
+set_xfce xfce4-panel /panels/panel-1/length uint 100
+set_xfce xfce4-panel /panels/panel-1/position-locked bool true
+set_xfce xfce4-panel /panels/panel-1/size uint 36
+set_xfce xfwm4 /general/use_compositing bool false
+
+# Remove extra panels and keep panel 1 only.
+for id in $(xfconf-query -c xfce4-panel -p /panels 2>/dev/null | grep -E '^[[:space:]]*[0-9]+[[:space:]]*$' | tr -d ' ' || true); do
+  [ "$id" = 1 ] && continue
+  xfconf-query -c xfce4-panel -p "/panels/panel-${id}" -r -R >/dev/null 2>&1 || true
+done
+xfconf-query -c xfce4-panel -p /panels -r >/dev/null 2>&1 || true
+xfconf-query -c xfce4-panel -p /panels --force-array -n -t int -s 1 >/dev/null 2>&1 || true
+
+# Solid blue background (#3584E4).
+for base in /backdrop/screen0/monitorrdp0/workspace0 /backdrop/screen0/monitor0/workspace0; do
+  xfconf-query -c xfce4-desktop -p "${base}/image-style" -n -t int -s 0 >/dev/null 2>&1 || xfconf-query -c xfce4-desktop -p "${base}/image-style" -s 0 >/dev/null 2>&1 || true
+  xfconf-query -c xfce4-desktop -p "${base}/color-style" -n -t int -s 0 >/dev/null 2>&1 || xfconf-query -c xfce4-desktop -p "${base}/color-style" -s 0 >/dev/null 2>&1 || true
+done
+
+thunar --daemon >/tmp/thunar-${USER}.log 2>&1 &
+gio info "$DESKTOP" >/dev/null 2>&1 || true
+sleep 2
+
+for round in 1 2 3 4; do
+  for file in "$DESKTOP"/*.desktop; do
+    [ -f "$file" ] || continue
+    checksum="$(sha256sum "$file" | awk '{print $1}')"
+    gio set -t string "$file" metadata::xfce-exe-checksum "$checksum" >/dev/null 2>&1 || true
+  done
+  xfdesktop --reload >/dev/null 2>&1 || true
+  sleep 2
+done
+
+xfdesktop --arrange >/dev/null 2>&1 || true
+/usr/local/bin/xrdp-audio-init >/dev/null 2>&1 || true
+/usr/local/bin/rdp-drive-desktop-watcher >/tmp/rdp-drive-${USER}.log 2>&1 &
