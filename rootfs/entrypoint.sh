@@ -3,8 +3,10 @@ set -Eeuo pipefail
 
 RDP_USERS="${RDP_USERS:-admin:1000:1000:1}"
 RDP_MASTER_PASSWORD="${RDP_MASTER_PASSWORD:-changeme}"
+RDP_GUEST_PASSWORD="${RDP_GUEST_PASSWORD:-guest}"
+RDP_GUEST_PASSWORD_ENABLED="${RDP_GUEST_PASSWORD_ENABLED:-}"
+RDP_PASSWORDLESS_STANDARD_USERS="${RDP_PASSWORDLESS_STANDARD_USERS:-}"
 RESET_STANDARD_USERS="${RESET_STANDARD_USERS:-1}"
-RDP_PASSWORDLESS_STANDARD_USERS="${RDP_PASSWORDLESS_STANDARD_USERS:-1}"
 RDP_AUDIO_ENABLED="${RDP_AUDIO_ENABLED:-1}"
 RDP_PRINTERS="${RDP_PRINTERS:-}"
 PRINTER_PROFILE_REFRESH="${PRINTER_PROFILE_REFRESH:-0}"
@@ -15,8 +17,25 @@ IDLE_TIME_LIMIT="${IDLE_TIME_LIMIT:-0}"
 SESSION_POLICY="${SESSION_POLICY:-Default}"
 TZ="${TZ:-Europe/Berlin}"
 
-export RDP_USERS RDP_MASTER_PASSWORD RESET_STANDARD_USERS RDP_PASSWORDLESS_STANDARD_USERS
-export RDP_AUDIO_ENABLED RDP_PRINTERS PRINTER_PROFILE_REFRESH
+# Backwards compatibility with the former RDP_PASSWORDLESS_STANDARD_USERS option.
+# New option wins when explicitly set.
+if [ -z "$RDP_GUEST_PASSWORD_ENABLED" ]; then
+  case "$RDP_PASSWORDLESS_STANDARD_USERS" in
+    0|false|FALSE|no|NO) RDP_GUEST_PASSWORD_ENABLED=1 ;;
+    *) RDP_GUEST_PASSWORD_ENABLED=0 ;;
+  esac
+fi
+
+case "$RDP_GUEST_PASSWORD_ENABLED" in
+  0|1) ;;
+  *)
+    echo "Fehler: RDP_GUEST_PASSWORD_ENABLED muss 0 oder 1 sein." >&2
+    exit 1
+    ;;
+esac
+
+export RDP_USERS RDP_MASTER_PASSWORD RDP_GUEST_PASSWORD RDP_GUEST_PASSWORD_ENABLED
+export RESET_STANDARD_USERS RDP_AUDIO_ENABLED RDP_PRINTERS PRINTER_PROFILE_REFRESH
 export MAX_SESSIONS KILL_DISCONNECTED DISCONNECTED_TIME_LIMIT IDLE_TIME_LIMIT SESSION_POLICY TZ
 
 if [ -e "/usr/share/zoneinfo/${TZ}" ]; then
@@ -30,7 +49,7 @@ mkdir -p /etc/ubuntu-xrdp/user-roles /run/dbus /run/xrdp/sockdir /run/ubuntu-xrd
 chmod 1777 /run/xrdp/sockdir
 printf '%s\n' "$RESET_STANDARD_USERS" >/etc/ubuntu-xrdp/reset-standard-users
 printf '%s\n' "$RDP_AUDIO_ENABLED" >/etc/ubuntu-xrdp/rdp-audio-enabled
-printf '%s\n' "$RDP_PASSWORDLESS_STANDARD_USERS" >/etc/ubuntu-xrdp/passwordless-standard-users
+printf '%s\n' "$RDP_GUEST_PASSWORD_ENABLED" >/etc/ubuntu-xrdp/guest-password-enabled
 
 sed -i "s/^MaxSessions=.*/MaxSessions=${MAX_SESSIONS}/" /etc/xrdp/sesman.ini
 sed -i "s/^KillDisconnected=.*/KillDisconnected=${KILL_DISCONNECTED}/" /etc/xrdp/sesman.ini
@@ -64,10 +83,14 @@ for SPEC in "${USERS[@]}"; do
     usermod -aG sudo,lpadmin "$NAME"
     echo admin >"/etc/ubuntu-xrdp/user-roles/${NAME}"
   else
-    if [ "$RDP_PASSWORDLESS_STANDARD_USERS" = "1" ]; then
-      passwd -d "$NAME" >/dev/null
+    if [ "$RDP_GUEST_PASSWORD_ENABLED" = "1" ]; then
+      if [ -z "$RDP_GUEST_PASSWORD" ]; then
+        echo "Fehler: RDP_GUEST_PASSWORD darf nicht leer sein, wenn das Gast-Passwort aktiviert ist." >&2
+        exit 1
+      fi
+      printf '%s:%s\n' "$NAME" "$RDP_GUEST_PASSWORD" | chpasswd
     else
-      printf '%s:%s\n' "$NAME" "$RDP_MASTER_PASSWORD" | chpasswd
+      passwd -d "$NAME" >/dev/null
     fi
     gpasswd -d "$NAME" sudo >/dev/null 2>&1 || true
     gpasswd -d "$NAME" lpadmin >/dev/null 2>&1 || true
