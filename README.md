@@ -30,12 +30,30 @@ ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:stable
 
 Entwicklungs-Builds verwenden `:latest`; versionierte Releases verwenden Tags wie `:v1.0.0`.
 
-### Schnellstart unter Unraid
+### Installation unter Unraid
 
-1. `unraid/my-Ubuntu-XRDP.xml` nach `/boot/config/plugins/dockerMan/templates-user/` kopieren oder das Template direkt aus dem Repository installieren.
-2. In Unraid **Docker -> Add Container** öffnen und das Ubuntu-XRDP-Template auswählen.
-3. `RDP_USERS`, `RDP_MASTER_PASSWORD`, Home-/CUPS-Pfade, Druckerzuordnungen und optional GPU-Geräte konfigurieren.
-4. Container starten und mit einem beliebigen RDP-Client verbinden.
+Am einfachsten installierst du das Projekt direkt über das Unraid-Terminal.
+
+Für den aktuellen Entwicklungsstand (`latest`):
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) latest
+```
+
+Das Installationsskript:
+
+1. lädt das aktuelle Unraid-Template aus diesem Repository,
+2. speichert es unter `/boot/config/plugins/dockerMan/templates-user/my-Ubuntu-XRDP.xml`,
+3. setzt den gewünschten Image-Kanal,
+4. lädt das passende GHCR-Docker-Image herunter.
+
+Danach in Unraid:
+
+1. **Docker -> Add Container** öffnen.
+2. Das Template **Ubuntu-XRDP** auswählen.
+3. `RDP_USERS`, `RDP_MASTER_PASSWORD`, Home-Pfad, Druckerzuordnungen und optionale GPU-Geräte konfigurieren.
+4. Das Standardpasswort `changeme` unbedingt ersetzen.
+5. Container starten und per RDP verbinden.
 
 Standardformat für Benutzer:
 
@@ -44,6 +62,48 @@ admin:1000:1000:1;guest:1001:1001:0
 ```
 
 Das letzte Feld ist `1` für einen Administrator und `0` für ein zurücksetzbares Standardkonto.
+
+### Updates unter Unraid
+
+Docker-Image-Updates werden über GHCR bereitgestellt. Wenn ein neues Image veröffentlicht wird, kann Unraid über **Docker -> Check for Updates** prüfen, ob eine neue Version vorhanden ist.
+
+Für den Entwicklungs-Kanal:
+
+```text
+ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:latest
+```
+
+Für den stabilen Kanal:
+
+```text
+ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:stable
+```
+
+Für eine feste Version:
+
+```text
+ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:v1.0.0
+```
+
+Das Unraid-Template selbst kann jederzeit erneut aus GitHub aktualisiert werden. Für `latest`:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) latest
+```
+
+Für `stable`:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) stable
+```
+
+Oder für eine feste Version:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) v1.0.0
+```
+
+Persistente Daten unter `/mnt/user/appdata/ubuntu-xrdp/home` bleiben bei normalen Container-Updates erhalten. Dort liegen auch die persistenten Drucker-Golden-Profile.
 
 ### Druckerzuordnung
 
@@ -110,12 +170,30 @@ ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:stable
 
 Development builds use `:latest`; versioned releases use tags such as `:v1.0.0`.
 
-### Unraid quick start
+### Installation on Unraid
 
-1. Copy `unraid/my-Ubuntu-XRDP.xml` to `/boot/config/plugins/dockerMan/templates-user/` or install it from the repository.
-2. Open **Docker -> Add Container** and select the Ubuntu-XRDP template.
-3. Configure `RDP_USERS`, `RDP_MASTER_PASSWORD`, home/CUPS paths, printer mappings and optional GPU devices.
-4. Start the container and connect with any RDP client.
+The easiest installation method is to use the Unraid terminal directly.
+
+For the current development channel (`latest`):
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) latest
+```
+
+The installer:
+
+1. downloads the current Unraid template from this repository,
+2. stores it at `/boot/config/plugins/dockerMan/templates-user/my-Ubuntu-XRDP.xml`,
+3. selects the requested image channel,
+4. pulls the matching GHCR Docker image.
+
+Then in Unraid:
+
+1. Open **Docker -> Add Container**.
+2. Select the **Ubuntu-XRDP** template.
+3. Configure `RDP_USERS`, `RDP_MASTER_PASSWORD`, the home path, printer mappings and optional GPU devices.
+4. Replace the default password `changeme`.
+5. Start the container and connect using an RDP client.
 
 Default user specification format:
 
@@ -124,6 +202,48 @@ admin:1000:1000:1;guest:1001:1001:0
 ```
 
 The last field is `1` for an administrator and `0` for a resettable standard account.
+
+### Updates on Unraid
+
+Docker image updates are distributed through GHCR. When a new image is published, Unraid can detect it using **Docker -> Check for Updates**.
+
+Development channel:
+
+```text
+ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:latest
+```
+
+Stable channel:
+
+```text
+ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:stable
+```
+
+Pinned version:
+
+```text
+ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:v1.0.0
+```
+
+The Unraid template itself can also be refreshed from GitHub at any time. For `latest`:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) latest
+```
+
+For `stable`:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) stable
+```
+
+Or for a pinned version:
+
+```bash
+bash <(curl -fsSL https://raw.githubusercontent.com/h3xx3r/xUbuntu-XRDP-fuse-DE/main/scripts/install-unraid.sh) v1.0.0
+```
+
+Persistent data under `/mnt/user/appdata/ubuntu-xrdp/home` is preserved during normal container updates. This location also contains the persistent printer golden profiles.
 
 ### Printer mapping
 
