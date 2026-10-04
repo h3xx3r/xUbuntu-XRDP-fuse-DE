@@ -15,7 +15,7 @@ Ubuntu 24.04 XFCE Remote-Desktop-Container mit Multiuser-XRDP, FUSE-Laufwerksuml
 - RDP-Client-Laufwerksumleitung über FUSE
 - RDP-Audio und Mikrofon über `pulseaudio-module-xrdp`
 - Firefox, Google Chrome, LibreOffice, GIMP, Xournal++ und PDF Arranger
-- ChatGPT als Admin-only Desktop-/Menü-Launcher
+- Offizielle ChatGPT Linux Desktop-App von OpenAI für Admin-Konten
 - Synaptic-Paketverwaltung mit XRDP-tauglichem Admin-Passwortdialog
 - CUPS mit benutzerspezifischer Netzwerkdrucker-Zuweisung
 - Persistente Drucker-Golden-Profile pro Benutzer
@@ -39,7 +39,7 @@ Ubuntu 24.04 XFCE Remote-Desktop-Container mit Multiuser-XRDP, FUSE-Laufwerksuml
 | **PDF Arranger** | PDF-Seiten anordnen, drehen und zusammenfügen | Alle Benutzer |
 | **Mousepad** | Einfacher Texteditor | Alle Benutzer |
 | **XFCE Terminal** | Terminal | Installiert, aber kein Desktop-Symbol |
-| **ChatGPT** | Admin-only Launcher zu `https://chatgpt.com` in Chrome-App-Modus | Nur Admin |
+| **ChatGPT Desktop-App (OpenAI)** | Offizielle Linux-App für ChatGPT, Work und Codex | Nur Admin |
 | **Synaptic-Paketverwaltung** | Grafische Paketverwaltung mit XRDP-tauglichem Passwortdialog | Nur Admin |
 | **GDebi** | Installation lokaler `.deb`-Pakete | Admin-Werkzeug |
 | **Software & Updates** (`software-properties-gtk`) | Paketquellen verwalten | Admin-Werkzeug |
@@ -129,7 +129,9 @@ Das Admin-Masterpasswort darf nicht leer sein. Passwortlose Gastkonten nur in ei
 
 ### Admin-Anwendungen: ChatGPT und Synaptic
 
-Admin-Konten erhalten zusätzlich **ChatGPT** als Desktop- und Menü-Launcher. Der Launcher öffnet `https://chatgpt.com` in Google Chrome im App-Modus. Zugangsdaten werden nicht im Image gespeichert; ein Browser-Login liegt im persistenten Admin-Home.
+Für Admin-Konten ist die **offizielle ChatGPT Desktop-App für Linux von OpenAI** direkt im Image installiert. Es handelt sich nicht mehr um einen Browser-/Web-App-Launcher. Die Ubuntu-24.04-`.deb` wird beim Image-Build direkt von OpenAI installiert und die Admin-Verknüpfung startet die native Anwendung über `chatgpt` im X11-Modus für XRDP. Die offizielle Linux-App befindet sich derzeit im Preview-Status. Dokumentation: https://learn.chatgpt.com/docs/linux/linux-app
+
+Die App wird nur für Admin-Konten als Desktop- und Menüeintrag freigegeben. ChatGPT-Anmeldedaten werden nicht in das Image eingebaut; App-Konfiguration und Login-Zustand liegen im persistenten Admin-Home.
 
 **Synaptic-Paketverwaltung** ist ebenfalls nur für Admin-Konten sichtbar. Unter XRDP wird Synaptic nicht über `pkexec`, sondern über einen eigenen `sudo -A`/Zenity-Askpass-Wrapper gestartet. Beim Start erscheint ein grafischer Passwortdialog für das Admin-Passwort.
 
@@ -314,7 +316,7 @@ Ubuntu 24.04 XFCE Remote Desktop container with multi-user XRDP, FUSE client-dri
 - FUSE RDP client-drive redirection
 - RDP audio and microphone
 - Firefox, Google Chrome, LibreOffice, GIMP, Xournal++ and PDF Arranger
-- Admin-only ChatGPT desktop/menu launcher
+- Official OpenAI ChatGPT Linux desktop app for administrator accounts
 - XRDP-compatible Synaptic package manager with graphical admin password prompt
 - CUPS per-user printer assignment
 - Persistent per-user printer golden profiles
@@ -338,7 +340,7 @@ Ubuntu 24.04 XFCE Remote Desktop container with multi-user XRDP, FUSE client-dri
 | **PDF Arranger** | Reorder, rotate and merge PDF pages | All users |
 | **Mousepad** | Lightweight text editor | All users |
 | **XFCE Terminal** | Terminal emulator | Installed, no desktop shortcut |
-| **ChatGPT** | Admin-only launcher to `https://chatgpt.com` in Chrome app mode | Admin only |
+| **ChatGPT Desktop App (OpenAI)** | Official Linux app for ChatGPT, Work and Codex | Admin only |
 | **Synaptic Package Manager** | Graphical package management with XRDP-compatible password dialog | Admin only |
 | **GDebi** | Install local `.deb` packages | Admin tool |
 | **Software & Updates** (`software-properties-gtk`) | Manage software sources | Admin tool |
@@ -396,7 +398,9 @@ to allow guest accounts to log in with an empty password while administrators st
 
 ### Admin applications: ChatGPT and Synaptic
 
-Administrator accounts additionally receive a **ChatGPT** desktop and menu launcher. It opens `https://chatgpt.com` in Google Chrome app mode. No account credentials are baked into the image; browser login state is stored in the persistent administrator home directory.
+Administrator accounts get the **official OpenAI ChatGPT desktop app for Linux** installed directly in the image. It is no longer a browser/web-app launcher. The Ubuntu 24.04 `.deb` is installed directly from OpenAI during the image build, and the administrator shortcut launches the native `chatgpt` application in X11 mode for XRDP. The official Linux app is currently in preview. Documentation: https://learn.chatgpt.com/docs/linux/linux-app
+
+The app is exposed as a desktop/menu application only to administrator accounts. ChatGPT credentials are not baked into the image; app configuration and login state live in the persistent administrator home directory.
 
 **Synaptic Package Manager** is also exposed only to administrator accounts. Under XRDP it uses a dedicated `sudo -A` + Zenity askpass wrapper instead of `pkexec`, providing a graphical administrator password prompt.
 
