@@ -1,6 +1,6 @@
 #!/bin/bash
 set -Eeuo pipefail
-mkdir -p /usr/local/share/applications /usr/local/bin /etc/xdg /etc/opt/chrome/policies/managed
+mkdir -p /usr/local/share/applications /usr/local/share/ubuntu-xrdp/admin-applications /usr/local/bin /etc/xdg /etc/opt/chrome/policies/managed
 
 cat >/usr/local/bin/google-chrome-xrdp <<'EOF'
 #!/bin/bash
@@ -13,7 +13,46 @@ export GDK_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1 LIBGL_DRI3_DISABLE=1 GTK_THEME=Ad
 export LANG=de_DE.UTF-8 LANGUAGE=de_DE:de LC_MESSAGES=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 TEXTDOMAINDIR=/usr/share/locale
 exec /usr/bin/xournalpp "$@"
 EOF
-chmod 755 /usr/local/bin/google-chrome-xrdp /usr/local/bin/xournalpp-xrdp
+
+cat >/usr/local/bin/chatgpt-xrdp <<'EOF'
+#!/bin/bash
+set -e
+ROLE_FILE="/etc/ubuntu-xrdp/user-roles/${USER:-$(id -un)}"
+if [ ! -r "$ROLE_FILE" ] || [ "$(cat "$ROLE_FILE")" != "admin" ]; then
+  command -v zenity >/dev/null 2>&1 && zenity --error --title="ChatGPT" --text="ChatGPT ist in diesem Image nur für Admin-Konten freigeschaltet." || true
+  exit 1
+fi
+exec /usr/local/bin/google-chrome-xrdp --app=https://chatgpt.com
+EOF
+
+cat >/usr/local/bin/xrdp-sudo-askpass <<'EOF'
+#!/bin/bash
+exec zenity --password --title="Administrator-Rechte" --text="Bitte das Admin-Passwort eingeben:"
+EOF
+
+cat >/usr/local/bin/synaptic-xrdp <<'EOF'
+#!/bin/bash
+set -e
+ROLE_FILE="/etc/ubuntu-xrdp/user-roles/${USER:-$(id -un)}"
+if [ ! -r "$ROLE_FILE" ] || [ "$(cat "$ROLE_FILE")" != "admin" ]; then
+  zenity --error --title="Synaptic-Paketverwaltung" --text="Synaptic ist nur für Admin-Konten verfügbar." || true
+  exit 1
+fi
+export SUDO_ASKPASS=/usr/local/bin/xrdp-sudo-askpass
+export XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}"
+xhost +SI:localuser:root >/dev/null 2>&1 || true
+exec sudo -A -H env \
+  DISPLAY="$DISPLAY" \
+  XAUTHORITY="$XAUTHORITY" \
+  DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-}" \
+  LANG=de_DE.UTF-8 \
+  LANGUAGE=de_DE:de \
+  LC_MESSAGES=de_DE.UTF-8 \
+  LC_ALL=de_DE.UTF-8 \
+  /usr/sbin/synaptic
+EOF
+
+chmod 755 /usr/local/bin/google-chrome-xrdp /usr/local/bin/xournalpp-xrdp /usr/local/bin/chatgpt-xrdp /usr/local/bin/xrdp-sudo-askpass /usr/local/bin/synaptic-xrdp
 
 write_app(){
   local id="$1" name="$2" exec_cmd="$3" icon="$4" mime="${5:-}"
@@ -41,6 +80,34 @@ write_app ubuntu-xrdp-evince PDF-Betrachter 'evince %U' org.gnome.Evince
 write_app ubuntu-xrdp-pdfarranger 'PDF Arranger' 'pdfarranger %F' com.github.jeromerobert.pdfarranger
 write_app ubuntu-xrdp-gimp GIMP 'gimp %U' gimp 'image/jpeg;image/png;image/gif;image/webp;image/bmp;image/x-bmp;image/tiff;image/svg+xml;image/x-xcf'
 write_app ubuntu-xrdp-xournalpp Xournal++ '/usr/local/bin/xournalpp-xrdp %F' com.github.xournalpp.xournalpp 'application/pdf;application/x-pdf'
+
+cat >/usr/local/share/ubuntu-xrdp/admin-applications/chatgpt.desktop <<'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=ChatGPT
+Comment=ChatGPT im Browser öffnen
+Exec=/usr/local/bin/chatgpt-xrdp
+Icon=applications-internet
+Terminal=false
+StartupNotify=true
+Categories=Network;WebBrowser;
+EOF
+
+cat >/usr/local/share/ubuntu-xrdp/admin-applications/synaptic.desktop <<'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Synaptic-Paketverwaltung
+Comment=Pakete installieren, aktualisieren und entfernen
+Exec=/usr/local/bin/synaptic-xrdp
+Icon=synaptic
+Terminal=false
+StartupNotify=true
+Categories=System;Settings;PackageManager;
+EOF
+
+chmod 755 /usr/local/share/ubuntu-xrdp/admin-applications/*.desktop
 
 cat >/etc/xdg/mimeapps.list <<'EOF'
 [Default Applications]
