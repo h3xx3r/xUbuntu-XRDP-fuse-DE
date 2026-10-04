@@ -1,0 +1,10 @@
+#!/bin/bash
+set -Eeuo pipefail
+PROFILE_ROOT=/home/.ubuntu-xrdp-printer-profiles
+PROFILE="${PROFILE_ROOT}/${USER}/lpoptions.bak"
+rm -rf "$HOME/.cups"
+mkdir -p "$HOME/.cups"
+chmod 700 "$HOME/.cups"
+if [ -f "$PROFILE" ]; then
+  install -m 600 "$PROFILE" "$HOME/.cups/lpoptions"
+fi
