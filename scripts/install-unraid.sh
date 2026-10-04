@@ -32,16 +32,9 @@ mv "$TMP" "$TEMPLATE_FILE"
 printf '\nTemplate installiert/aktualisiert:\n  %s\n\n' "$TEMPLATE_FILE"
 printf 'Image-Kanal:\n  %s\n\n' "$IMAGE"
 
-echo "Versuche Image zu laden ..."
-if docker pull "$IMAGE"; then
-  echo
-  echo "Image erfolgreich geladen."
-else
-  echo
-  echo "Hinweis: Das Image ist noch nicht verfügbar oder das GHCR-Paket ist noch nicht öffentlich."
-  echo "Das Template wurde trotzdem installiert."
-fi
-
+echo "Es wird absichtlich noch kein Docker-Image geladen."
+echo "So entsteht in Unraid kein verwaistes Image."
+echo "Das Image lädt Unraid automatisch, sobald du den Container aus dem Template erstellst."
 echo
 echo "Weiter in Unraid:"
 echo "  Docker -> Add Container -> Template -> Ubuntu-XRDP"
