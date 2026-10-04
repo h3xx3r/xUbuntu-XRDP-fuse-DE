@@ -15,6 +15,8 @@ Ubuntu 24.04 XFCE Remote-Desktop-Container mit Multiuser-XRDP, FUSE-Laufwerksuml
 - RDP-Client-Laufwerksumleitung über FUSE
 - RDP-Audio und Mikrofon über `pulseaudio-module-xrdp`
 - Firefox, Google Chrome, LibreOffice, GIMP, Xournal++ und PDF Arranger
+- ChatGPT als Admin-only Desktop-/Menü-Launcher
+- Synaptic-Paketverwaltung mit XRDP-tauglichem Admin-Passwortdialog
 - CUPS mit benutzerspezifischer Netzwerkdrucker-Zuweisung
 - Persistente Drucker-Golden-Profile pro Benutzer
 - Blauer XFCE-Hintergrund, nur eine untere Leiste und automatische Desktop-Symbolanordnung
@@ -92,6 +94,24 @@ guest -> Passwortfeld leer lassen
 ```
 
 Das Admin-Masterpasswort darf nicht leer sein. Passwortlose Gastkonten nur in einem vertrauenswürdigen LAN oder über VPN verwenden.
+
+### Admin-Anwendungen: ChatGPT und Synaptic
+
+Admin-Konten erhalten zusätzlich **ChatGPT** als Desktop- und Menü-Launcher. Der Launcher öffnet `https://chatgpt.com` in Google Chrome im App-Modus. Zugangsdaten werden nicht im Image gespeichert; ein Browser-Login liegt im persistenten Admin-Home.
+
+**Synaptic-Paketverwaltung** ist ebenfalls nur für Admin-Konten sichtbar. Unter XRDP wird Synaptic nicht über `pkexec`, sondern über einen eigenen `sudo -A`/Zenity-Askpass-Wrapper gestartet. Beim Start erscheint ein grafischer Passwortdialog für das Admin-Passwort.
+
+### Persistenz von nachträglich installierten Programmen
+
+Wichtig bei Docker:
+
+- **Container Stop/Start:** nachträglich mit Synaptic oder `apt` installierte Programme bleiben erhalten.
+- **Docker-/Host-Neustart:** sie bleiben erhalten, solange derselbe Container weiterverwendet wird.
+- **Image-Update / Unraid-Update:** Unraid erstellt den Container aus dem neuen Image neu. Manuell im alten Container installierte Systempakete sind dann **nicht mehr vorhanden**.
+- **Container löschen und neu erstellen:** manuell installierte Systempakete gehen ebenfalls verloren.
+- Dateien, Browserprofile und Benutzereinstellungen unter dem persistent gemounteten `/home` bleiben erhalten.
+
+Wenn Programme updatesicher benötigt werden, sollten sie in das Docker-Image aufgenommen oder über eine deklarierte Paketliste bei Containerstart installiert werden.
 
 ### Installation unter Unraid
 
@@ -262,6 +282,8 @@ Ubuntu 24.04 XFCE Remote Desktop container with multi-user XRDP, FUSE client-dri
 - FUSE RDP client-drive redirection
 - RDP audio and microphone
 - Firefox, Google Chrome, LibreOffice, GIMP, Xournal++ and PDF Arranger
+- Admin-only ChatGPT desktop/menu launcher
+- XRDP-compatible Synaptic package manager with graphical admin password prompt
 - CUPS per-user printer assignment
 - Persistent per-user printer golden profiles
 - Blue XFCE desktop, one bottom panel and automatic desktop icon arrangement
@@ -307,6 +329,24 @@ RDP_GUEST_PASSWORD_ENABLED=0
 ```
 
 to allow guest accounts to log in with an empty password while administrators still require the master password.
+
+### Admin applications: ChatGPT and Synaptic
+
+Administrator accounts additionally receive a **ChatGPT** desktop and menu launcher. It opens `https://chatgpt.com` in Google Chrome app mode. No account credentials are baked into the image; browser login state is stored in the persistent administrator home directory.
+
+**Synaptic Package Manager** is also exposed only to administrator accounts. Under XRDP it uses a dedicated `sudo -A` + Zenity askpass wrapper instead of `pkexec`, providing a graphical administrator password prompt.
+
+### Persistence of manually installed applications
+
+Important Docker behavior:
+
+- **Container stop/start:** packages installed manually with Synaptic or `apt` remain present.
+- **Docker/host restart:** they remain present as long as the same container is retained.
+- **Image update / Unraid update:** the container is recreated from the new image, so manually installed system packages are **not preserved**.
+- **Deleting/recreating the container:** manually installed system packages are lost as well.
+- Files, browser profiles and user configuration stored below the persistent `/home` mount remain preserved.
+
+Applications which must survive image updates should be added to the image itself or declared in a package list installed automatically when the container starts.
 
 ### Unraid installation
 
@@ -379,4 +419,4 @@ Do not expose XRDP directly to the public Internet. Prefer LAN/VPN access. Alway
 
 ### License
 
-Project scripts and configuration are MIT licensed. Third-party software remains under its respective upstream licenses.
+Project scripts and configuration are MIT licensed. Third-party software remains under their respective upstream licenses.
