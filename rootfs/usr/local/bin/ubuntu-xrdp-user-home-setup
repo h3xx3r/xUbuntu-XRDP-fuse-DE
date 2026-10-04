@@ -2,7 +2,8 @@
 set -Eeuo pipefail
 HOME_DIR="$HOME"
 DESKTOP="$HOME_DIR/Schreibtisch"
-mkdir -p "$DESKTOP" "$HOME_DIR/Downloads" "$HOME_DIR/Dokumente" "$HOME_DIR/Bilder" "$HOME_DIR/Musik" "$HOME_DIR/Videos" "$HOME_DIR/Vorlagen" "$HOME_DIR/Öffentlich" "$HOME_DIR/thinclient_drives" "$HOME_DIR/.config" "$HOME_DIR/.cache"
+LOCAL_APPS="$HOME_DIR/.local/share/applications"
+mkdir -p "$DESKTOP" "$HOME_DIR/Downloads" "$HOME_DIR/Dokumente" "$HOME_DIR/Bilder" "$HOME_DIR/Musik" "$HOME_DIR/Videos" "$HOME_DIR/Vorlagen" "$HOME_DIR/Öffentlich" "$HOME_DIR/thinclient_drives" "$HOME_DIR/.config" "$HOME_DIR/.cache" "$LOCAL_APPS"
 chmod 755 "$DESKTOP" "$HOME_DIR/Downloads" "$HOME_DIR/Dokumente" "$HOME_DIR/Bilder" "$HOME_DIR/Musik" "$HOME_DIR/Videos" "$HOME_DIR/Vorlagen" "$HOME_DIR/Öffentlich"
 cat >"$HOME_DIR/.config/user-dirs.dirs" <<'EOF'
 XDG_DESKTOP_DIR="$HOME/Schreibtisch"
@@ -42,4 +43,25 @@ copy_launcher /usr/local/share/applications/ubuntu-xrdp-evince.desktop PDF-Betra
 copy_launcher /usr/local/share/applications/ubuntu-xrdp-pdfarranger.desktop PDF-Arranger.desktop
 copy_launcher /usr/local/share/applications/ubuntu-xrdp-gimp.desktop GIMP.desktop
 copy_launcher /usr/local/share/applications/ubuntu-xrdp-xournalpp.desktop XournalPP.desktop
+
+ROLE="standard"
+ROLE_FILE="/etc/ubuntu-xrdp/user-roles/${USER}"
+[ -r "$ROLE_FILE" ] && ROLE="$(cat "$ROLE_FILE")"
+
+if [ "$ROLE" = "admin" ]; then
+  copy_launcher /usr/local/share/ubuntu-xrdp/admin-applications/chatgpt.desktop ChatGPT.desktop
+  install -m 755 /usr/local/share/ubuntu-xrdp/admin-applications/chatgpt.desktop "$LOCAL_APPS/chatgpt.desktop"
+  install -m 755 /usr/local/share/ubuntu-xrdp/admin-applications/synaptic.desktop "$LOCAL_APPS/synaptic.desktop"
+else
+  rm -f "$DESKTOP/ChatGPT.desktop" "$LOCAL_APPS/chatgpt.desktop" 2>/dev/null || true
+  cat >"$LOCAL_APPS/synaptic.desktop" <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Synaptic-Paketverwaltung
+Hidden=true
+NoDisplay=true
+EOF
+fi
+
 rm -f "$DESKTOP/Terminal.desktop" "$DESKTOP/Dateimanager.desktop" "$DESKTOP/Thunar.desktop" "$DESKTOP/Synaptic.desktop" "$DESKTOP/GDebi.desktop" "$DESKTOP/Softwarequellen.desktop" "$DESKTOP/.clipboard" "$DESKTOP/.clipboard.desktop" 2>/dev/null || true
+update-desktop-database "$LOCAL_APPS" >/dev/null 2>&1 || true
