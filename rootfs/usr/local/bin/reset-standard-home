@@ -1,0 +1,48 @@
+#!/bin/bash
+set -Eeuo pipefail
+HOME_DIR="$HOME"
+
+for DIR in Schreibtisch Downloads Dokumente Bilder Musik Videos Vorlagen Öffentlich; do
+  TARGET="$HOME_DIR/$DIR"
+  if [ -d "$TARGET" ] && [ ! -L "$TARGET" ]; then
+    find "$TARGET" -mindepth 1 -maxdepth 1 -exec rm -rf -- {} +
+  fi
+done
+
+find "$HOME_DIR" -mindepth 1 -maxdepth 1 -type f \
+  ! -name '.Xauthority' \
+  ! -name '.xsession' \
+  ! -name '.profile' \
+  ! -name '.pam_environment' \
+  -delete
+
+rm -rf \
+  "$HOME_DIR/.mozilla" \
+  "$HOME_DIR/.config/google-chrome" \
+  "$HOME_DIR/.config/chromium" \
+  "$HOME_DIR/.config/libreoffice" \
+  "$HOME_DIR/.config/GIMP" \
+  "$HOME_DIR/.config/gimp" \
+  "$HOME_DIR/.config/xournalpp" \
+  "$HOME_DIR/.config/pdfarranger" \
+  "$HOME_DIR/.config/evince" \
+  "$HOME_DIR/.config/Thunar" \
+  "$HOME_DIR/.config/xfce4" \
+  "$HOME_DIR/.cache/mozilla" \
+  "$HOME_DIR/.cache/google-chrome" \
+  "$HOME_DIR/.cache/chromium" \
+  "$HOME_DIR/.cache/sessions" \
+  "$HOME_DIR/.cups" 2>/dev/null || true
+
+mkdir -p "$HOME_DIR/.local/share"
+for ITEM in "$HOME_DIR/.local/share/"*; do
+  [ -e "$ITEM" ] || continue
+  NAME="$(basename "$ITEM")"
+  case "$NAME" in
+    xrdp|gvfs-metadata) ;;
+    *) rm -rf "$ITEM" ;;
+  esac
+done
+
+/usr/local/bin/ubuntu-xrdp-user-home-setup
+/usr/local/bin/restore-printer-profile >>"/tmp/printer-restore-${USER}.log" 2>&1 || true
