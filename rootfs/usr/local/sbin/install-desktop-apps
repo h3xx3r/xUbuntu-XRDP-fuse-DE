@@ -1,0 +1,64 @@
+#!/bin/bash
+set -Eeuo pipefail
+mkdir -p /usr/local/share/applications /usr/local/bin /etc/xdg /etc/opt/chrome/policies/managed
+
+cat >/usr/local/bin/google-chrome-xrdp <<'EOF'
+#!/bin/bash
+exec /usr/bin/google-chrome-stable --no-sandbox --disable-dev-shm-usage --password-store=basic --ozone-platform=x11 --no-first-run "$@"
+EOF
+
+cat >/usr/local/bin/xournalpp-xrdp <<'EOF'
+#!/bin/bash
+export GDK_BACKEND=x11 LIBGL_ALWAYS_SOFTWARE=1 LIBGL_DRI3_DISABLE=1 GTK_THEME=Adwaita:light
+export LANG=de_DE.UTF-8 LANGUAGE=de_DE:de LC_MESSAGES=de_DE.UTF-8 LC_ALL=de_DE.UTF-8 TEXTDOMAINDIR=/usr/share/locale
+exec /usr/bin/xournalpp "$@"
+EOF
+chmod 755 /usr/local/bin/google-chrome-xrdp /usr/local/bin/xournalpp-xrdp
+
+write_app(){
+  local id="$1" name="$2" exec_cmd="$3" icon="$4" mime="${5:-}"
+  cat >"/usr/local/share/applications/${id}.desktop" <<EOF
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=${name}
+Exec=${exec_cmd}
+Icon=${icon}
+Terminal=false
+StartupNotify=true
+${mime:+MimeType=${mime};}
+EOF
+  chmod 755 "/usr/local/share/applications/${id}.desktop"
+}
+
+write_app ubuntu-xrdp-firefox Firefox 'firefox %U' firefox
+write_app ubuntu-xrdp-chrome 'Google Chrome' '/usr/local/bin/google-chrome-xrdp %U' google-chrome
+write_app ubuntu-xrdp-writer 'LibreOffice Writer' 'libreoffice --writer %U' libreoffice-writer
+write_app ubuntu-xrdp-calc 'LibreOffice Calc' 'libreoffice --calc %U' libreoffice-calc
+write_app ubuntu-xrdp-impress 'LibreOffice Impress' 'libreoffice --impress %U' libreoffice-impress
+write_app ubuntu-xrdp-draw 'LibreOffice Draw' 'libreoffice --draw %U' libreoffice-draw
+write_app ubuntu-xrdp-evince PDF-Betrachter 'evince %U' org.gnome.Evince
+write_app ubuntu-xrdp-pdfarranger 'PDF Arranger' 'pdfarranger %F' com.github.jeromerobert.pdfarranger
+write_app ubuntu-xrdp-gimp GIMP 'gimp %U' gimp 'image/jpeg;image/png;image/gif;image/webp;image/bmp;image/x-bmp;image/tiff;image/svg+xml;image/x-xcf'
+write_app ubuntu-xrdp-xournalpp Xournal++ '/usr/local/bin/xournalpp-xrdp %F' com.github.xournalpp.xournalpp 'application/pdf;application/x-pdf'
+
+cat >/etc/xdg/mimeapps.list <<'EOF'
+[Default Applications]
+application/pdf=ubuntu-xrdp-xournalpp.desktop
+application/x-pdf=ubuntu-xrdp-xournalpp.desktop
+image/jpeg=ubuntu-xrdp-gimp.desktop
+image/png=ubuntu-xrdp-gimp.desktop
+image/gif=ubuntu-xrdp-gimp.desktop
+image/webp=ubuntu-xrdp-gimp.desktop
+image/bmp=ubuntu-xrdp-gimp.desktop
+image/x-bmp=ubuntu-xrdp-gimp.desktop
+image/tiff=ubuntu-xrdp-gimp.desktop
+image/svg+xml=ubuntu-xrdp-gimp.desktop
+image/x-xcf=ubuntu-xrdp-gimp.desktop
+EOF
+
+cat >/etc/opt/chrome/policies/managed/ubuntu-xrdp.json <<'EOF'
+{"ApplicationLocaleValue":"de","AlwaysOpenPdfExternally":true,"AutoOpenFileTypes":["pdf"]}
+EOF
+
+update-desktop-database /usr/local/share/applications
