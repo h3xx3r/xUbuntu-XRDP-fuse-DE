@@ -10,8 +10,7 @@
   <ExtraParams>--shm-size=2g --cap-add=SYS_ADMIN --label net.unraid.docker.managed=dockerman --label net.unraid.docker.shell=bash</ExtraParams>
 
   <Config Name="RDP Port" Target="3389" Default="3389" Mode="tcp" Description="RDP Port" Type="Port" Display="always" Required="true" Mask="false">3389</Config>
-  <Config Name="Home Verzeichnis" Target="/home" Default="/mnt/user/appdata/ubuntu-xrdp/home" Mode="rw" Description="Persistente Benutzerprofile und Drucker-Backups" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ubuntu-xrdp/home</Config>
-  <Config Name="CUPS Konfiguration" Target="/etc/cups" Default="/mnt/user/appdata/ubuntu-xrdp/cups" Mode="rw" Description="Persistente CUPS-Konfiguration" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ubuntu-xrdp/cups</Config>
+  <Config Name="Home Verzeichnis" Target="/home" Default="/mnt/user/appdata/ubuntu-xrdp/home" Mode="rw" Description="Persistente Benutzerprofile und Drucker-Golden-Profile" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ubuntu-xrdp/home</Config>
   <Config Name="RDP Benutzer" Target="RDP_USERS" Default="admin:1000:1000:1;guest:1001:1001:0" Mode="" Description="Format: name:uid:gid:admin" Type="Variable" Display="always" Required="true" Mask="false">admin:1000:1000:1;guest:1001:1001:0</Config>
   <Config Name="Master Passwort" Target="RDP_MASTER_PASSWORD" Default="changeme" Mode="" Description="Gemeinsames RDP Passwort - unbedingt ändern" Type="Variable" Display="always" Required="true" Mask="true">changeme</Config>
   <Config Name="Standardkonten zurücksetzen" Target="RESET_STANDARD_USERS" Default="1" Mode="" Description="1 = Reset bei neuer Sitzung, 0 = persistent" Type="Variable" Display="always" Required="true" Mask="false">1</Config>
