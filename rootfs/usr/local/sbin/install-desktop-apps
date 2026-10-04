@@ -22,7 +22,7 @@ if [ ! -r "$ROLE_FILE" ] || [ "$(cat "$ROLE_FILE")" != "admin" ]; then
   command -v zenity >/dev/null 2>&1 && zenity --error --title="ChatGPT" --text="ChatGPT ist in diesem Image nur für Admin-Konten freigeschaltet." || true
   exit 1
 fi
-exec /usr/local/bin/google-chrome-xrdp --app=https://chatgpt.com
+exec /usr/bin/chatgpt --ozone-platform=x11 "$@"
 EOF
 
 cat >/usr/local/bin/xrdp-sudo-askpass <<'EOF'
@@ -86,12 +86,12 @@ cat >/usr/local/share/ubuntu-xrdp/admin-applications/chatgpt.desktop <<'EOF'
 Version=1.0
 Type=Application
 Name=ChatGPT
-Comment=ChatGPT im Browser öffnen
+Comment=Offizielle ChatGPT Desktop-App von OpenAI
 Exec=/usr/local/bin/chatgpt-xrdp
-Icon=applications-internet
+Icon=chatgpt
 Terminal=false
 StartupNotify=true
-Categories=Network;WebBrowser;
+Categories=Network;Office;
 EOF
 
 cat >/usr/local/share/ubuntu-xrdp/admin-applications/synaptic.desktop <<'EOF'
