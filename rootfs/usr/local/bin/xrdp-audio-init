@@ -1,0 +1,13 @@
+#!/bin/bash
+set -u
+[ -f /etc/ubuntu-xrdp/rdp-audio-enabled ] || exit 0
+[ "$(cat /etc/ubuntu-xrdp/rdp-audio-enabled)" = 1 ] || exit 0
+LOG="/tmp/xrdp-audio-${USER}.log"
+pulseaudio --start --exit-idle-time=-1 >>"$LOG" 2>&1 || true
+for n in 1 2 3 4 5 6 7 8 9 10; do pactl info >>"$LOG" 2>&1 && break; sleep 1; done
+LOADER=/usr/libexec/pulseaudio-module-xrdp/load_pa_modules.sh
+[ -x "$LOADER" ] && "$LOADER" >>"$LOG" 2>&1 || true
+pactl set-default-sink xrdp-sink >>"$LOG" 2>&1 || true
+pactl set-default-source xrdp-source >>"$LOG" 2>&1 || true
+pactl list short sinks >>"$LOG" 2>&1 || true
+pactl list short sources >>"$LOG" 2>&1 || true
