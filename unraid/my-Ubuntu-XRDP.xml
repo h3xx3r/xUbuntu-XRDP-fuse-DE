@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <Container version="2">
   <Name>Ubuntu-XRDP</Name>
-  <Repository>ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:stable</Repository>
+  <Repository>ghcr.io/h3xx3r/xubuntu-xrdp-fuse-de:latest</Repository>
   <Network>bridge</Network>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
