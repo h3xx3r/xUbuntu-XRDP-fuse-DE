@@ -23,6 +23,38 @@ Ubuntu 24.04 XFCE Remote-Desktop-Container mit Multiuser-XRDP, FUSE-Laufwerksuml
 - GPU-/VAAPI-Unterstützung über `/dev/dri`
 - GHCR-Images über GitHub Actions
 
+### Standardmäßig im Image enthaltene Programme
+
+| Programm / Komponente | Zweck | Verfügbarkeit |
+| --- | --- | --- |
+| **Firefox** + deutsche Sprachdateien | Webbrowser | Alle Benutzer |
+| **Google Chrome** | Webbrowser | Alle Benutzer |
+| **LibreOffice Writer** | Textverarbeitung | Alle Benutzer |
+| **LibreOffice Calc** | Tabellenkalkulation | Alle Benutzer |
+| **LibreOffice Impress** | Präsentationen | Alle Benutzer |
+| **LibreOffice Draw** | Zeichnungen / PDF-Bearbeitung | Alle Benutzer |
+| **GIMP** | Bildbearbeitung | Alle Benutzer |
+| **Xournal++ 1.3.8** | PDF-Anmerkungen / handschriftliche Notizen | Alle Benutzer |
+| **Evince / PDF-Betrachter** | PDF-Anzeige | Alle Benutzer |
+| **PDF Arranger** | PDF-Seiten anordnen, drehen und zusammenfügen | Alle Benutzer |
+| **Mousepad** | Einfacher Texteditor | Alle Benutzer |
+| **XFCE Terminal** | Terminal | Installiert, aber kein Desktop-Symbol |
+| **ChatGPT** | Admin-only Launcher zu `https://chatgpt.com` in Chrome-App-Modus | Nur Admin |
+| **Synaptic-Paketverwaltung** | Grafische Paketverwaltung mit XRDP-tauglichem Passwortdialog | Nur Admin |
+| **GDebi** | Installation lokaler `.deb`-Pakete | Admin-Werkzeug |
+| **Software & Updates** (`software-properties-gtk`) | Paketquellen verwalten | Admin-Werkzeug |
+| **system-config-printer** | Grafische Druckerverwaltung | Admin / Druckerverwaltung |
+| **Pavucontrol** | PulseAudio-Lautstärke- und Audiogeräteverwaltung | Alle Benutzer |
+| **CUPS** | Drucksystem / Netzwerkdrucker | Systemdienst |
+| **qpdf + Poppler-Tools** | PDF-Werkzeuge im Hintergrund / Terminal | Systemwerkzeuge |
+| **FFmpeg** | Audio-/Video-Werkzeuge | Systemwerkzeug |
+| **Mesa / VAAPI / Vulkan-Werkzeuge** | GPU-/Video-Beschleunigung und Diagnose | Systemkomponenten |
+| **FUSE3 / GVFS** | RDP-Laufwerksumleitung und virtuelle Dateisysteme | Systemkomponenten |
+| **XRDP 0.10.6.1 + xorgxrdp 0.10.5** | RDP-Server und Xorg-Backend | Systemkomponenten |
+| **XFCE 4** | Desktop-Umgebung | Alle Benutzer |
+
+Die Desktop-Symbole werden bewusst auf die wichtigsten Anwendungen beschränkt. Einige installierte Admin- und Systemwerkzeuge sind nur über das XFCE-Menü oder das Terminal erreichbar.
+
 ### Docker-Image
 
 ```text
@@ -289,6 +321,38 @@ Ubuntu 24.04 XFCE Remote Desktop container with multi-user XRDP, FUSE client-dri
 - Blue XFCE desktop, one bottom panel and automatic desktop icon arrangement
 - GPU/VAAPI support through `/dev/dri`
 - GHCR images built through GitHub Actions
+
+### Applications included in the image by default
+
+| Application / component | Purpose | Availability |
+| --- | --- | --- |
+| **Firefox** + German language pack | Web browser | All users |
+| **Google Chrome** | Web browser | All users |
+| **LibreOffice Writer** | Word processing | All users |
+| **LibreOffice Calc** | Spreadsheets | All users |
+| **LibreOffice Impress** | Presentations | All users |
+| **LibreOffice Draw** | Drawing / PDF editing | All users |
+| **GIMP** | Image editing | All users |
+| **Xournal++ 1.3.8** | PDF annotation / handwritten notes | All users |
+| **Evince / PDF Viewer** | PDF viewing | All users |
+| **PDF Arranger** | Reorder, rotate and merge PDF pages | All users |
+| **Mousepad** | Lightweight text editor | All users |
+| **XFCE Terminal** | Terminal emulator | Installed, no desktop shortcut |
+| **ChatGPT** | Admin-only launcher to `https://chatgpt.com` in Chrome app mode | Admin only |
+| **Synaptic Package Manager** | Graphical package management with XRDP-compatible password dialog | Admin only |
+| **GDebi** | Install local `.deb` packages | Admin tool |
+| **Software & Updates** (`software-properties-gtk`) | Manage software sources | Admin tool |
+| **system-config-printer** | Graphical printer management | Admin / printer management |
+| **Pavucontrol** | PulseAudio volume and device control | All users |
+| **CUPS** | Printing / network printers | System service |
+| **qpdf + Poppler tools** | PDF command-line/background tools | System tools |
+| **FFmpeg** | Audio/video tools | System tool |
+| **Mesa / VAAPI / Vulkan tools** | GPU/video acceleration and diagnostics | System components |
+| **FUSE3 / GVFS** | RDP drive redirection and virtual filesystems | System components |
+| **XRDP 0.10.6.1 + xorgxrdp 0.10.5** | RDP server and Xorg backend | System components |
+| **XFCE 4** | Desktop environment | All users |
+
+Desktop shortcuts are intentionally limited to the most important applications. Some installed administration and system tools are available only through the XFCE menu or terminal.
 
 ### Docker image
 
