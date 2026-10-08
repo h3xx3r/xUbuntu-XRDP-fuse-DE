@@ -25,6 +25,11 @@ exec dbus-run-session -- bash <<'SESSION'
 export LANG=de_DE.UTF-8 LANGUAGE=de_DE:de LC_MESSAGES=de_DE.UTF-8 LC_ALL=de_DE.UTF-8
 export XDG_CURRENT_DESKTOP=XFCE XDG_SESSION_DESKTOP=xfce DESKTOP_SESSION=xfce
 export XDG_CONFIG_DIRS=/etc/xdg XDG_DATA_DIRS=/usr/local/share:/usr/share
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+# Start PulseAudio and the XRDP sink/source before XFCE loads its panel audio
+# plugin. The session initializer calls this again later as a harmless retry.
+/usr/local/bin/xrdp-audio-init >/dev/null 2>&1 || true
 
 xfce4-session &
 SESSION_PID=$!
