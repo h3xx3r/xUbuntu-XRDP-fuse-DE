@@ -1,0 +1,23 @@
+#!/bin/bash
+set -Eeuo pipefail
+
+USER_NAME="${USER:-$(id -un)}"
+ROLE_FILE="/etc/ubuntu-xrdp/user-roles/${USER_NAME}"
+KEEP_FILE="/etc/ubuntu-xrdp/keep-admin-sessions"
+
+ROLE="standard"
+KEEP_ADMIN_SESSIONS="1"
+
+[ -r "$ROLE_FILE" ] && ROLE="$(cat "$ROLE_FILE")"
+[ -r "$KEEP_FILE" ] && KEEP_ADMIN_SESSIONS="$(cat "$KEEP_FILE")"
+
+# XRDP/xorgxrdp receives the disconnect settings through environment
+# variables. Override them only for administrator sessions so applications
+# such as ChatGPT keep running when the RDP client disconnects. Standard/
+# guest sessions retain the global KillDisconnected/DisconnectedTimeLimit.
+if [ "$ROLE" = "admin" ] && [ "$KEEP_ADMIN_SESSIONS" = "1" ]; then
+  export XRDP_SESMAN_KILL_DISCONNECTED=0
+  export XRDP_SESMAN_MAX_DISC_TIME=0
+fi
+
+exec /usr/lib/xorg/Xorg "$@"
