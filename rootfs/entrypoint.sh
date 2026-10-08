@@ -13,6 +13,7 @@ PRINTER_PROFILE_REFRESH="${PRINTER_PROFILE_REFRESH:-0}"
 MAX_SESSIONS="${MAX_SESSIONS:-20}"
 KILL_DISCONNECTED="${KILL_DISCONNECTED:-true}"
 DISCONNECTED_TIME_LIMIT="${DISCONNECTED_TIME_LIMIT:-60}"
+KEEP_ADMIN_SESSIONS="${KEEP_ADMIN_SESSIONS:-1}"
 IDLE_TIME_LIMIT="${IDLE_TIME_LIMIT:-0}"
 SESSION_POLICY="${SESSION_POLICY:-Default}"
 TZ="${TZ:-Europe/Berlin}"
@@ -34,9 +35,17 @@ case "$RDP_GUEST_PASSWORD_ENABLED" in
     ;;
 esac
 
+case "$KEEP_ADMIN_SESSIONS" in
+  0|1) ;;
+  *)
+    echo "Fehler: KEEP_ADMIN_SESSIONS muss 0 oder 1 sein." >&2
+    exit 1
+    ;;
+esac
+
 export RDP_USERS RDP_MASTER_PASSWORD RDP_GUEST_PASSWORD RDP_GUEST_PASSWORD_ENABLED
 export RESET_STANDARD_USERS RDP_AUDIO_ENABLED RDP_PRINTERS PRINTER_PROFILE_REFRESH
-export MAX_SESSIONS KILL_DISCONNECTED DISCONNECTED_TIME_LIMIT IDLE_TIME_LIMIT SESSION_POLICY TZ
+export MAX_SESSIONS KILL_DISCONNECTED DISCONNECTED_TIME_LIMIT KEEP_ADMIN_SESSIONS IDLE_TIME_LIMIT SESSION_POLICY TZ
 
 if [ -e "/usr/share/zoneinfo/${TZ}" ]; then
   ln -snf "/usr/share/zoneinfo/${TZ}" /etc/localtime
@@ -50,12 +59,31 @@ chmod 1777 /run/xrdp/sockdir
 printf '%s\n' "$RESET_STANDARD_USERS" >/etc/ubuntu-xrdp/reset-standard-users
 printf '%s\n' "$RDP_AUDIO_ENABLED" >/etc/ubuntu-xrdp/rdp-audio-enabled
 printf '%s\n' "$RDP_GUEST_PASSWORD_ENABLED" >/etc/ubuntu-xrdp/guest-password-enabled
+printf '%s\n' "$KEEP_ADMIN_SESSIONS" >/etc/ubuntu-xrdp/keep-admin-sessions
 
 sed -i "s/^MaxSessions=.*/MaxSessions=${MAX_SESSIONS}/" /etc/xrdp/sesman.ini
 sed -i "s/^KillDisconnected=.*/KillDisconnected=${KILL_DISCONNECTED}/" /etc/xrdp/sesman.ini
 sed -i "s/^DisconnectedTimeLimit=.*/DisconnectedTimeLimit=${DISCONNECTED_TIME_LIMIT}/" /etc/xrdp/sesman.ini
 sed -i "s/^IdleTimeLimit=.*/IdleTimeLimit=${IDLE_TIME_LIMIT}/" /etc/xrdp/sesman.ini
 sed -i "s/^Policy=.*/Policy=${SESSION_POLICY}/" /etc/xrdp/sesman.ini
+
+# Route Xorg through a role-aware wrapper. XRDP only offers a global
+# KillDisconnected setting, so the wrapper disables it for admin sessions
+# while leaving the configured timeout unchanged for standard/guest users.
+awk '
+BEGIN { in_xorg=0; replaced=0 }
+{
+  if ($0 == "[Xorg]") { in_xorg=1; print; next }
+  if (in_xorg && $0 ~ /^\[/) { in_xorg=0 }
+  if (in_xorg && !replaced && $0 ~ /^param=/) {
+    print "param=/usr/local/sbin/xrdp-xorg-wrapper"
+    replaced=1
+    next
+  }
+  print
+}
+' /etc/xrdp/sesman.ini >/etc/xrdp/sesman.ini.new
+mv /etc/xrdp/sesman.ini.new /etc/xrdp/sesman.ini
 
 IFS=';' read -ra USERS <<<"$RDP_USERS"
 for SPEC in "${USERS[@]}"; do
