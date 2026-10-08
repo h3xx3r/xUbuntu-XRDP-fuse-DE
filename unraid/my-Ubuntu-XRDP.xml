@@ -5,7 +5,7 @@
   <Network>bridge</Network>
   <Shell>bash</Shell>
   <Privileged>false</Privileged>
-  <Overview>Ubuntu 24.04 XFCE XRDP Multiuser Desktop mit deutscher Oberfläche, getrennten Admin-/Gast-Passwörtern, optional passwortlosen Gastkonten, Gastreset, FUSE-Laufwerken, RDP Audio/Mikrofon, GPU und CUPS-Netzwerkdruckern.</Overview>
+  <Overview>Ubuntu 24.04 XFCE XRDP Multiuser Desktop mit deutscher Oberfläche, getrennten Admin-/Gast-Passwörtern, optional passwortlosen Gastkonten, persistenten Admin-Sitzungen, Gastreset, FUSE-Laufwerken, RDP Audio/Mikrofon, GPU und CUPS-Netzwerkdruckern.</Overview>
   <Category>Tools:</Category>
   <ExtraParams>--shm-size=2g --cap-add=SYS_ADMIN --label net.unraid.docker.managed=dockerman --label net.unraid.docker.shell=bash</ExtraParams>
 
@@ -16,12 +16,13 @@
   <Config Name="Gast-Passwort verwenden" Target="RDP_GUEST_PASSWORD_ENABLED" Default="0" Mode="" Description="1 = Konten mit admin=0 verwenden das separate Gast-Passwort. 0 = Gast-/Standardkonten melden sich ohne Passwort an." Type="Variable" Display="always" Required="true" Mask="false">0</Config>
   <Config Name="Gast-Passwort" Target="RDP_GUEST_PASSWORD" Default="guest" Mode="" Description="Separates Passwort für alle Konten mit admin=0. Wird nur verwendet, wenn Gast-Passwort verwenden = 1." Type="Variable" Display="always" Required="false" Mask="true">guest</Config>
   <Config Name="Standardkonten zurücksetzen" Target="RESET_STANDARD_USERS" Default="1" Mode="" Description="1 = Reset bei neuer Sitzung, 0 = persistent" Type="Variable" Display="always" Required="true" Mask="false">1</Config>
+  <Config Name="Admin-Sitzungen aktiv halten" Target="KEEP_ADMIN_SESSIONS" Default="1" Mode="" Description="1 = Admin-Sitzungen werden nach RDP-Trennung nicht beendet; laufende Programme wie ChatGPT bleiben aktiv. 0 = globalen Disconnect-Timeout auch auf Admins anwenden." Type="Variable" Display="always" Required="true" Mask="false">1</Config>
   <Config Name="RDP Audio" Target="RDP_AUDIO_ENABLED" Default="1" Mode="" Description="1 = Lautsprecher und Mikrofon über RDP" Type="Variable" Display="always" Required="true" Mask="false">1</Config>
   <Config Name="Netzwerkdrucker" Target="RDP_PRINTERS" Default="" Mode="" Description="user|queue|uri|model|options; mehrere Drucker mit ; trennen" Type="Variable" Display="always" Required="false" Mask="false"></Config>
   <Config Name="Druckerprofile neu erzeugen" Target="PRINTER_PROFILE_REFRESH" Default="0" Mode="" Description="1 erzeugt Golden Profiles neu; danach wieder auf 0" Type="Variable" Display="advanced" Required="true" Mask="false">0</Config>
   <Config Name="Maximale Sitzungen" Target="MAX_SESSIONS" Default="20" Mode="" Description="Maximale gleichzeitige XRDP Sitzungen" Type="Variable" Display="advanced" Required="true" Mask="false">20</Config>
-  <Config Name="Getrennte Sitzungen beenden" Target="KILL_DISCONNECTED" Default="true" Mode="" Description="true oder false" Type="Variable" Display="advanced" Required="true" Mask="false">true</Config>
-  <Config Name="Disconnected Timeout" Target="DISCONNECTED_TIME_LIMIT" Default="60" Mode="" Description="Sekunden bis getrennte Sitzung beendet wird" Type="Variable" Display="advanced" Required="true" Mask="false">60</Config>
+  <Config Name="Getrennte Gast-/Standardsitzungen beenden" Target="KILL_DISCONNECTED" Default="true" Mode="" Description="true = getrennte Gast-/Standardsitzungen nach Timeout beenden. Admins können über KEEP_ADMIN_SESSIONS ausgenommen werden." Type="Variable" Display="advanced" Required="true" Mask="false">true</Config>
+  <Config Name="Disconnected Timeout" Target="DISCONNECTED_TIME_LIMIT" Default="60" Mode="" Description="Sekunden bis getrennte Gast-/Standardsitzung beendet wird" Type="Variable" Display="advanced" Required="true" Mask="false">60</Config>
   <Config Name="Idle Timeout" Target="IDLE_TIME_LIMIT" Default="0" Mode="" Description="0 = deaktiviert" Type="Variable" Display="advanced" Required="true" Mask="false">0</Config>
   <Config Name="Session Policy" Target="SESSION_POLICY" Default="Default" Mode="" Description="XRDP Session Policy" Type="Variable" Display="advanced" Required="true" Mask="false">Default</Config>
   <Config Name="Zeitzone" Target="TZ" Default="Europe/Berlin" Mode="" Description="Linux TZ Name" Type="Variable" Display="always" Required="true" Mask="false">Europe/Berlin</Config>
