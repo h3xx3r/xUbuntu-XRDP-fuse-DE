@@ -1,12 +1,50 @@
 #!/bin/bash
 set -u
+
 [ -f /etc/ubuntu-xrdp/rdp-audio-enabled ] || exit 0
 [ "$(cat /etc/ubuntu-xrdp/rdp-audio-enabled)" = 1 ] || exit 0
-LOG="/tmp/xrdp-audio-${USER}.log"
-pulseaudio --start --exit-idle-time=-1 >>"$LOG" 2>&1 || true
-for n in 1 2 3 4 5 6 7 8 9 10; do pactl info >>"$LOG" 2>&1 && break; sleep 1; done
-LOADER=/usr/libexec/pulseaudio-module-xrdp/load_pa_modules.sh
-[ -x "$LOADER" ] && "$LOADER" >>"$LOG" 2>&1 || true
+
+LOG="/tmp/xrdp-audio-${USER:-$(id -un)}.log"
+XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+export XDG_RUNTIME_DIR
+mkdir -p "$XDG_RUNTIME_DIR"
+chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
+
+# Start the per-user PulseAudio daemon before XFCE's audio plugin is loaded.
+# This avoids the initial 'pa_context_new(): connection refused' race.
+if ! pulseaudio --check >/dev/null 2>&1; then
+  pulseaudio --start --exit-idle-time=-1 >>"$LOG" 2>&1 || true
+fi
+
+PA_READY=0
+for n in $(seq 1 15); do
+  if pactl info >>"$LOG" 2>&1; then
+    PA_READY=1
+    break
+  fi
+  sleep 1
+done
+
+[ "$PA_READY" = 1 ] || exit 0
+
+# Loading the XRDP modules more than once can create duplicate sinks/sources,
+# so only run the loader while they are missing. A later call from the session
+# initializer acts as a second chance if chansrv was not ready yet.
+if ! pactl list short sinks 2>/dev/null | awk '{print $2}' | grep -qx 'xrdp-sink' \
+   || ! pactl list short sources 2>/dev/null | awk '{print $2}' | grep -qx 'xrdp-source'; then
+  LOADER=/usr/libexec/pulseaudio-module-xrdp/load_pa_modules.sh
+  if [ -x "$LOADER" ]; then
+    for n in $(seq 1 10); do
+      "$LOADER" >>"$LOG" 2>&1 || true
+      if pactl list short sinks 2>/dev/null | awk '{print $2}' | grep -qx 'xrdp-sink' \
+         && pactl list short sources 2>/dev/null | awk '{print $2}' | grep -qx 'xrdp-source'; then
+        break
+      fi
+      sleep 1
+    done
+  fi
+fi
+
 pactl set-default-sink xrdp-sink >>"$LOG" 2>&1 || true
 pactl set-default-source xrdp-source >>"$LOG" 2>&1 || true
 pactl list short sinks >>"$LOG" 2>&1 || true
