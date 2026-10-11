@@ -71,21 +71,13 @@ printf '%s\n' "$RDP_AUDIO_ENABLED" >/etc/ubuntu-xrdp/rdp-audio-enabled
 printf '%s\n' "$RDP_GUEST_PASSWORD_ENABLED" >/etc/ubuntu-xrdp/guest-password-enabled
 printf '%s\n' "$KEEP_ADMIN_SESSIONS" >/etc/ubuntu-xrdp/keep-admin-sessions
 
-# XRDP 0.10.x provides KillDisconnected globally. Do not replace the Xorg
-# command with a wrapper; keeping the stock Xorg path is the most reliable
-# startup path. If KEEP_ADMIN_SESSIONS=1, keep disconnected sessions globally
-# so administrator applications such as ChatGPT remain alive and reconnectable.
-EFFECTIVE_KILL_DISCONNECTED="$KILL_DISCONNECTED"
-EFFECTIVE_DISCONNECTED_TIME_LIMIT="$DISCONNECTED_TIME_LIMIT"
-if [ "$KEEP_ADMIN_SESSIONS" = "1" ]; then
-  EFFECTIVE_KILL_DISCONNECTED=false
-  EFFECTIVE_DISCONNECTED_TIME_LIMIT=0
-fi
-
+# Keep the configured disconnect policy active globally for guest/standard
+# sessions. The patched XRDP build overrides these values only for users whose
+# role file contains "admin" and only when KEEP_ADMIN_SESSIONS=1.
 log "XRDP-Konfiguration wird gesetzt"
 sed -i "s/^MaxSessions=.*/MaxSessions=${MAX_SESSIONS}/" /etc/xrdp/sesman.ini
-sed -i "s/^KillDisconnected=.*/KillDisconnected=${EFFECTIVE_KILL_DISCONNECTED}/" /etc/xrdp/sesman.ini
-sed -i "s/^DisconnectedTimeLimit=.*/DisconnectedTimeLimit=${EFFECTIVE_DISCONNECTED_TIME_LIMIT}/" /etc/xrdp/sesman.ini
+sed -i "s/^KillDisconnected=.*/KillDisconnected=${KILL_DISCONNECTED}/" /etc/xrdp/sesman.ini
+sed -i "s/^DisconnectedTimeLimit=.*/DisconnectedTimeLimit=${DISCONNECTED_TIME_LIMIT}/" /etc/xrdp/sesman.ini
 sed -i "s/^IdleTimeLimit=.*/IdleTimeLimit=${IDLE_TIME_LIMIT}/" /etc/xrdp/sesman.ini
 sed -i "s/^Policy=.*/Policy=${SESSION_POLICY}/" /etc/xrdp/sesman.ini
 
