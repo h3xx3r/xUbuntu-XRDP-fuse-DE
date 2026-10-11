@@ -1,0 +1,12 @@
+#%PAM-1.0
+
+# Ubuntu/Debian PAM stack for XRDP sessions.
+# Use the distribution common-* stacks instead of XRDP's generic pam_unix
+# fallback so passwords created with chpasswd authenticate consistently.
+auth     required  pam_env.so
+auth     required  pam_env.so envfile=/etc/default/locale
+@include common-auth
+
+@include common-account
+@include common-password
+@include common-session
