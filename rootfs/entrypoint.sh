@@ -1,6 +1,12 @@
 #!/bin/bash
 set -Eeuo pipefail
 
+log() {
+  printf '[entrypoint] %s\n' "$*"
+}
+
+trap 'rc=$?; printf "[entrypoint] FEHLER in Zeile %s: %s (Exit %s)\n" "$LINENO" "$BASH_COMMAND" "$rc" >&2' ERR
+
 RDP_USERS="${RDP_USERS:-admin:1000:1000:1}"
 RDP_MASTER_PASSWORD="${RDP_MASTER_PASSWORD:-changeme}"
 RDP_GUEST_PASSWORD="${RDP_GUEST_PASSWORD:-guest}"
@@ -17,6 +23,8 @@ KEEP_ADMIN_SESSIONS="${KEEP_ADMIN_SESSIONS:-1}"
 IDLE_TIME_LIMIT="${IDLE_TIME_LIMIT:-0}"
 SESSION_POLICY="${SESSION_POLICY:-Default}"
 TZ="${TZ:-Europe/Berlin}"
+
+log "Initialisierung startet"
 
 # Backwards compatibility with the former RDP_PASSWORDLESS_STANDARD_USERS option.
 # New option wins when explicitly set.
@@ -52,7 +60,9 @@ if [ -e "/usr/share/zoneinfo/${TZ}" ]; then
   echo "$TZ" >/etc/timezone
 fi
 
+log "Desktop-Anwendungen werden vorbereitet"
 /usr/local/sbin/install-desktop-apps
+log "Desktop-Anwendungen bereit"
 
 mkdir -p /etc/ubuntu-xrdp/user-roles /run/dbus /run/xrdp/sockdir /run/ubuntu-xrdp
 chmod 1777 /run/xrdp/sockdir
@@ -72,6 +82,7 @@ if [ "$KEEP_ADMIN_SESSIONS" = "1" ]; then
   EFFECTIVE_DISCONNECTED_TIME_LIMIT=0
 fi
 
+log "XRDP-Konfiguration wird gesetzt"
 sed -i "s/^MaxSessions=.*/MaxSessions=${MAX_SESSIONS}/" /etc/xrdp/sesman.ini
 sed -i "s/^KillDisconnected=.*/KillDisconnected=${EFFECTIVE_KILL_DISCONNECTED}/" /etc/xrdp/sesman.ini
 sed -i "s/^DisconnectedTimeLimit=.*/DisconnectedTimeLimit=${EFFECTIVE_DISCONNECTED_TIME_LIMIT}/" /etc/xrdp/sesman.ini
@@ -83,6 +94,7 @@ for SPEC in "${USERS[@]}"; do
   [ -n "$SPEC" ] || continue
   IFS=':' read -r NAME UID_NUM GID_NUM ADMIN <<<"$SPEC"
   HOME_DIR="/home/${NAME}"
+  log "Benutzer ${NAME} (UID ${UID_NUM}) wird vorbereitet"
 
   if ! getent group "$GID_NUM" >/dev/null 2>&1; then groupadd -g "$GID_NUM" "$NAME"; fi
   GROUP_NAME="$(getent group "$GID_NUM" | cut -d: -f1)"
@@ -119,11 +131,27 @@ for SPEC in "${USERS[@]}"; do
   fi
 
   mkdir -p "$HOME_DIR" "/run/user/${UID_NUM}"
-  chown -R "$UID_NUM:$GID_NUM" "$HOME_DIR"
+
+  # A recursive chown on every startup can take a very long time once Chrome,
+  # ChatGPT and LibreOffice profiles contain many files. Only repair ownership
+  # recursively when the mounted home itself has the wrong uid/gid.
+  HOME_UID="$(stat -c '%u' "$HOME_DIR")"
+  HOME_GID="$(stat -c '%g' "$HOME_DIR")"
+  if [ "$HOME_UID" != "$UID_NUM" ] || [ "$HOME_GID" != "$GID_NUM" ]; then
+    log "Besitz von ${HOME_DIR} wird einmalig rekursiv auf ${UID_NUM}:${GID_NUM} korrigiert"
+    chown -R "$UID_NUM:$GID_NUM" "$HOME_DIR"
+  else
+    log "Besitz von ${HOME_DIR} stimmt; rekursives chown wird übersprungen"
+  fi
+
   chown "$UID_NUM:$GID_NUM" "/run/user/${UID_NUM}"
   chmod 700 "/run/user/${UID_NUM}"
 
-  runuser -u "$NAME" -- env HOME="$HOME_DIR" USER="$NAME" /usr/local/bin/ubuntu-xrdp-user-home-setup
+  log "Desktop-Profil für ${NAME} wird eingerichtet"
+  if ! timeout 60s runuser -u "$NAME" -- env HOME="$HOME_DIR" USER="$NAME" /usr/local/bin/ubuntu-xrdp-user-home-setup; then
+    echo "Fehler: Home-Setup für ${NAME} ist fehlgeschlagen oder hat länger als 60 Sekunden gedauert." >&2
+    exit 1
+  fi
 
   cat >"$HOME_DIR/.profile" <<'PROFILE'
 export LANG=de_DE.UTF-8
@@ -143,6 +171,7 @@ exec /etc/xrdp/startwm.sh
 XSESSION
   chmod 755 "$HOME_DIR/.xsession"
   chown "$UID_NUM:$GID_NUM" "$HOME_DIR/.profile" "$HOME_DIR/.pam_environment" "$HOME_DIR/.xsession"
+  log "Benutzer ${NAME} bereit"
 done
 
 add_device_group() {
@@ -156,4 +185,6 @@ add_device_group() {
 
 for DEVICE in /dev/dri/card* /dev/dri/renderD* /dev/fuse; do [ -e "$DEVICE" ] && add_device_group "$DEVICE"; done
 rm -f /run/dbus/pid /run/ubuntu-xrdp/printers.ready /tmp/.X*-lock 2>/dev/null || true
+
+log "Initialisierung abgeschlossen; starte: $*"
 exec "$@"
