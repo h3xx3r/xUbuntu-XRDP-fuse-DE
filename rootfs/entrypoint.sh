@@ -93,19 +93,62 @@ IFS=';' read -ra USERS <<<"$RDP_USERS"
 for SPEC in "${USERS[@]}"; do
   [ -n "$SPEC" ] || continue
   IFS=':' read -r NAME UID_NUM GID_NUM ADMIN <<<"$SPEC"
+
+  if [ -z "$NAME" ] || ! [[ "$UID_NUM" =~ ^[0-9]+$ ]] || ! [[ "$GID_NUM" =~ ^[0-9]+$ ]] || ! [[ "$ADMIN" =~ ^[01]$ ]]; then
+    echo "Fehler: Ungültiger RDP_USERS-Eintrag: ${SPEC}. Erwartet: name:uid:gid:admin" >&2
+    exit 1
+  fi
+
   HOME_DIR="/home/${NAME}"
-  log "Benutzer ${NAME} (UID ${UID_NUM}) wird vorbereitet"
+  log "Benutzer ${NAME} (UID ${UID_NUM}, GID ${GID_NUM}) wird vorbereitet"
 
-  if ! getent group "$GID_NUM" >/dev/null 2>&1; then groupadd -g "$GID_NUM" "$NAME"; fi
-  GROUP_NAME="$(getent group "$GID_NUM" | cut -d: -f1)"
+  # Ensure the requested primary group exists. Reuse an existing group with
+  # the requested GID if present; otherwise create one named like the user.
+  if getent group "$GID_NUM" >/dev/null 2>&1; then
+    GROUP_NAME="$(getent group "$GID_NUM" | cut -d: -f1)"
+  elif getent group "$NAME" >/dev/null 2>&1; then
+    EXISTING_GROUP_GID="$(getent group "$NAME" | cut -d: -f3)"
+    if [ "$EXISTING_GROUP_GID" != "$GID_NUM" ]; then
+      echo "Fehler: Gruppe ${NAME} existiert bereits mit GID ${EXISTING_GROUP_GID}, erwartet wird ${GID_NUM}." >&2
+      exit 1
+    fi
+    GROUP_NAME="$NAME"
+  else
+    groupadd -g "$GID_NUM" "$NAME"
+    GROUP_NAME="$NAME"
+  fi
 
-  if ! id "$NAME" >/dev/null 2>&1; then
+  if getent passwd "$NAME" >/dev/null 2>&1; then
+    CURRENT_UID="$(id -u "$NAME")"
+    if [ "$CURRENT_UID" != "$UID_NUM" ]; then
+      UID_OWNER="$(getent passwd "$UID_NUM" | cut -d: -f1 || true)"
+      if [ -n "$UID_OWNER" ] && [ "$UID_OWNER" != "$NAME" ]; then
+        echo "Fehler: UID ${UID_NUM} ist bereits durch Benutzer ${UID_OWNER} belegt; ${NAME} kann nicht angelegt werden." >&2
+        exit 1
+      fi
+      log "UID von ${NAME} wird von ${CURRENT_UID} auf ${UID_NUM} korrigiert"
+      usermod -u "$UID_NUM" "$NAME"
+    fi
+    usermod -g "$GROUP_NAME" -d "$HOME_DIR" -s /bin/bash "$NAME"
+  else
+    UID_OWNER="$(getent passwd "$UID_NUM" | cut -d: -f1 || true)"
+    if [ -n "$UID_OWNER" ]; then
+      echo "Fehler: Benutzer ${NAME} existiert nicht, aber UID ${UID_NUM} gehört bereits ${UID_OWNER}. Bitte RDP_USERS prüfen." >&2
+      exit 1
+    fi
+
     if [ -d "$HOME_DIR" ]; then
       useradd -u "$UID_NUM" -g "$GROUP_NAME" -M -d "$HOME_DIR" -s /bin/bash "$NAME"
     else
       useradd -u "$UID_NUM" -g "$GROUP_NAME" -m -d "$HOME_DIR" -s /bin/bash "$NAME"
     fi
   fi
+
+  if ! getent passwd "$NAME" >/dev/null 2>&1; then
+    echo "Fehler: Benutzer ${NAME} konnte nicht angelegt werden." >&2
+    exit 1
+  fi
+  log "Systemkonto ${NAME} ist vorhanden: $(getent passwd "$NAME" | cut -d: -f1,3,4,6,7)"
 
   if [ "$ADMIN" = "1" ]; then
     if [ -z "$RDP_MASTER_PASSWORD" ]; then
