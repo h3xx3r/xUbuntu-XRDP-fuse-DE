@@ -61,29 +61,22 @@ printf '%s\n' "$RDP_AUDIO_ENABLED" >/etc/ubuntu-xrdp/rdp-audio-enabled
 printf '%s\n' "$RDP_GUEST_PASSWORD_ENABLED" >/etc/ubuntu-xrdp/guest-password-enabled
 printf '%s\n' "$KEEP_ADMIN_SESSIONS" >/etc/ubuntu-xrdp/keep-admin-sessions
 
+# XRDP 0.10.x provides KillDisconnected globally. Do not replace the Xorg
+# command with a wrapper; keeping the stock Xorg path is the most reliable
+# startup path. If KEEP_ADMIN_SESSIONS=1, keep disconnected sessions globally
+# so administrator applications such as ChatGPT remain alive and reconnectable.
+EFFECTIVE_KILL_DISCONNECTED="$KILL_DISCONNECTED"
+EFFECTIVE_DISCONNECTED_TIME_LIMIT="$DISCONNECTED_TIME_LIMIT"
+if [ "$KEEP_ADMIN_SESSIONS" = "1" ]; then
+  EFFECTIVE_KILL_DISCONNECTED=false
+  EFFECTIVE_DISCONNECTED_TIME_LIMIT=0
+fi
+
 sed -i "s/^MaxSessions=.*/MaxSessions=${MAX_SESSIONS}/" /etc/xrdp/sesman.ini
-sed -i "s/^KillDisconnected=.*/KillDisconnected=${KILL_DISCONNECTED}/" /etc/xrdp/sesman.ini
-sed -i "s/^DisconnectedTimeLimit=.*/DisconnectedTimeLimit=${DISCONNECTED_TIME_LIMIT}/" /etc/xrdp/sesman.ini
+sed -i "s/^KillDisconnected=.*/KillDisconnected=${EFFECTIVE_KILL_DISCONNECTED}/" /etc/xrdp/sesman.ini
+sed -i "s/^DisconnectedTimeLimit=.*/DisconnectedTimeLimit=${EFFECTIVE_DISCONNECTED_TIME_LIMIT}/" /etc/xrdp/sesman.ini
 sed -i "s/^IdleTimeLimit=.*/IdleTimeLimit=${IDLE_TIME_LIMIT}/" /etc/xrdp/sesman.ini
 sed -i "s/^Policy=.*/Policy=${SESSION_POLICY}/" /etc/xrdp/sesman.ini
-
-# Route Xorg through a role-aware wrapper. XRDP only offers a global
-# KillDisconnected setting, so the wrapper disables it for admin sessions
-# while leaving the configured timeout unchanged for standard/guest users.
-awk '
-BEGIN { in_xorg=0; replaced=0 }
-{
-  if ($0 == "[Xorg]") { in_xorg=1; print; next }
-  if (in_xorg && $0 ~ /^\[/) { in_xorg=0 }
-  if (in_xorg && !replaced && $0 ~ /^param=/) {
-    print "param=/usr/local/sbin/xrdp-xorg-wrapper"
-    replaced=1
-    next
-  }
-  print
-}
-' /etc/xrdp/sesman.ini >/etc/xrdp/sesman.ini.new
-mv /etc/xrdp/sesman.ini.new /etc/xrdp/sesman.ini
 
 IFS=';' read -ra USERS <<<"$RDP_USERS"
 for SPEC in "${USERS[@]}"; do
