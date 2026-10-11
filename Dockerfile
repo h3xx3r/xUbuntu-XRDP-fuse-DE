@@ -41,7 +41,7 @@ RUN apt-get update \
     intel-media-va-driver ffmpeg fuse3 libfuse3-dev pulseaudio pulseaudio-utils pavucontrol alsa-utils \
     libpulse-dev cups cups-client cups-bsd cups-filters cups-ipp-utils system-config-printer \
     printer-driver-hpcups hplip fonts-dejavu fonts-liberation fonts-noto-core fonts-noto-color-emoji \
-    procps psmisc nano less unzip openssl build-essential autoconf automake autotools-dev libtool m4 \
+    procps psmisc nano less unzip openssl python3 build-essential autoconf automake autotools-dev libtool m4 \
     pkg-config nasm libssl-dev libpam0g-dev libx11-dev libxfixes-dev libxrandr-dev libxkbfile-dev \
     libjpeg-dev libpixman-1-dev libopus-dev libgbm-dev libepoxy-dev lsb-release dpkg-dev meson ninja-build doxygen \
  && rm -rf /var/lib/apt/lists/*
@@ -101,10 +101,14 @@ RUN curl -fL https://archive.ubuntu.com/ubuntu/pool/main/q/qpdf/libqpdf28_10.6.3
  && ldconfig \
  && rm -rf /var/lib/apt/lists/*
 
-# XRDP.
+COPY build/patch-xrdp-role-disconnect.py /tmp/patch-xrdp-role-disconnect.py
+
+# XRDP with a small role-aware disconnect patch. Global sesman settings stay
+# enabled for guests/standard users, while admin sessions can override them.
 RUN getent group xrdp >/dev/null || groupadd --system xrdp; \
     id xrdp >/dev/null 2>&1 || useradd --system --gid xrdp --home-dir /run/xrdp --shell /usr/sbin/nologin xrdp \
  && git clone --branch "v${XRDP_VERSION}" --depth 1 --recursive https://github.com/neutrinolabs/xrdp.git /tmp/xrdp \
+ && python3 /tmp/patch-xrdp-role-disconnect.py /tmp/xrdp/sesman/sesexec/session.c \
  && cd /tmp/xrdp \
  && ./bootstrap \
  && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libdir=/usr/lib/x86_64-linux-gnu \
@@ -112,7 +116,8 @@ RUN getent group xrdp >/dev/null || groupadd --system xrdp; \
       --enable-rfxcodec --enable-pixman --enable-opus \
  && make -j"$(nproc)" \
  && make install \
- && ldconfig
+ && ldconfig \
+ && rm -f /tmp/patch-xrdp-role-disconnect.py
 
 # xorgxrdp.
 RUN git clone --branch "v${XORGXRDP_VERSION}" --depth 1 https://github.com/neutrinolabs/xorgxrdp.git /tmp/xorgxrdp \
