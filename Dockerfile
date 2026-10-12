@@ -37,7 +37,7 @@ RUN apt-get update \
     libreoffice libreoffice-l10n-de libreoffice-help-de hunspell-de-de hyphen-de mythes-de \
     evince pdfarranger qpdf poppler-utils gimp gimp-help-de synaptic gdebi software-properties-gtk \
     elementary-xfce-icon-theme adwaita-icon-theme hicolor-icon-theme humanity-icon-theme \
-    librsvg2-common libgdk-pixbuf2.0-bin mesa-utils mesa-va-drivers mesa-vulkan-drivers libva2 vainfo \
+    librsvg2-common libgdk-pixbuf2.0-bin mesa-utils mesa-va-drivers mesa-vulkan-drivers libva2 vainfo vulkan-tools \
     intel-media-va-driver ffmpeg fuse3 libfuse3-dev pulseaudio pulseaudio-utils pavucontrol alsa-utils \
     libpulse-dev cups cups-client cups-bsd cups-filters cups-ipp-utils system-config-printer \
     printer-driver-hpcups hplip fonts-dejavu fonts-liberation fonts-noto-core fonts-noto-color-emoji \
@@ -61,7 +61,7 @@ RUN sed -i 's/^# *\(de_DE.UTF-8 UTF-8\)/\1/' /etc/locale.gen \
 RUN install -d -m 0755 /etc/apt/keyrings \
  && wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O /etc/apt/keyrings/packages.mozilla.org.asc \
  && echo 'deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main' >/etc/apt/sources.list.d/mozilla.list \
- && printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' >/etc/apt/preferences.d/mozilla \
+ && printf 'Package: *\nPin: origin packages.mozilla.org\nPin-Priority: 1000\n' /etc/apt/preferences.d/mozilla \
  && apt-get update \
  && apt-get install -y firefox firefox-l10n-de \
  && rm -rf /var/lib/apt/lists/*
