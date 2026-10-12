@@ -7,7 +7,7 @@
   <Privileged>false</Privileged>
   <Overview>Ubuntu 24.04 XFCE XRDP Multiuser Desktop mit deutscher Oberfläche, getrennten Admin-/Gast-Passwörtern, optional passwortlosen Gastkonten, persistenten Admin-Sitzungen, Gastreset, FUSE-Laufwerken, RDP Audio/Mikrofon, GPU und CUPS-Netzwerkdruckern.</Overview>
   <Category>Tools:</Category>
-  <ExtraParams>--shm-size=2g --cap-add=SYS_ADMIN --label net.unraid.docker.managed=dockerman --label net.unraid.docker.shell=bash</ExtraParams>
+  <ExtraParams>--shm-size=2g --cap-add=SYS_ADMIN --device-cgroup-rule='c 226:* rmw' --label net.unraid.docker.managed=dockerman --label net.unraid.docker.shell=bash</ExtraParams>
 
   <Config Name="RDP Port" Target="3389" Default="3389" Mode="tcp" Description="RDP Port" Type="Port" Display="always" Required="true" Mask="false">3389</Config>
   <Config Name="Home Verzeichnis" Target="/home" Default="/mnt/user/appdata/ubuntu-xrdp/home" Mode="rw" Description="Persistente Benutzerprofile und Drucker-Golden-Profile" Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/ubuntu-xrdp/home</Config>
@@ -27,5 +27,5 @@
   <Config Name="Session Policy" Target="SESSION_POLICY" Default="Default" Mode="" Description="XRDP Session Policy" Type="Variable" Display="advanced" Required="true" Mask="false">Default</Config>
   <Config Name="Zeitzone" Target="TZ" Default="Europe/Berlin" Mode="" Description="Linux TZ Name" Type="Variable" Display="always" Required="true" Mask="false">Europe/Berlin</Config>
   <Config Name="FUSE" Target="/dev/fuse" Default="/dev/fuse" Mode="" Description="RDP Client-Laufwerksumleitung" Type="Device" Display="advanced" Required="false" Mask="false">/dev/fuse</Config>
-  <Config Name="GPU / DRI" Target="/dev/dri" Default="/dev/dri" Mode="" Description="AMD/Intel GPU-Zugriff für Mesa, VAAPI und Vulkan. Übergibt alle card* und renderD* Nodes im /dev/dri-Verzeichnis." Type="Device" Display="advanced" Required="false" Mask="false">/dev/dri</Config>
+  <Config Name="GPU / DRI" Target="/dev/dri" Default="/dev/dri" Mode="rw" Description="AMD/Intel GPU-Zugriff für Mesa, VAAPI und Vulkan. /dev/dri wird eingebunden und DRM Character Devices (Major 226) werden über die Docker Device-Cgroup freigegeben." Type="Path" Display="advanced" Required="false" Mask="false">/dev/dri</Config>
 </Container>
