@@ -27,4 +27,5 @@
   <Config Name="Session Policy" Target="SESSION_POLICY" Default="Default" Mode="" Description="XRDP Session Policy" Type="Variable" Display="advanced" Required="true" Mask="false">Default</Config>
   <Config Name="Zeitzone" Target="TZ" Default="Europe/Berlin" Mode="" Description="Linux TZ Name" Type="Variable" Display="always" Required="true" Mask="false">Europe/Berlin</Config>
   <Config Name="FUSE" Target="/dev/fuse" Default="/dev/fuse" Mode="" Description="RDP Client-Laufwerksumleitung" Type="Device" Display="advanced" Required="false" Mask="false">/dev/fuse</Config>
+  <Config Name="GPU / DRI" Target="/dev/dri" Default="/dev/dri" Mode="" Description="AMD/Intel GPU-Zugriff für Mesa, VAAPI und Vulkan. Übergibt alle card* und renderD* Nodes im /dev/dri-Verzeichnis." Type="Device" Display="advanced" Required="false" Mask="false">/dev/dri</Config>
 </Container>
